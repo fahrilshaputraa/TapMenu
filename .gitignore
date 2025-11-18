@@ -1,0 +1,36 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# Logs
+*.log
+logs/
+
+# SQLite
+*.sqlite3
+*.sqlite
+db.sqlite3
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+*.env
+
+# Django
+media/
+static_root/
+staticfiles/
+*.pot
+*.po
