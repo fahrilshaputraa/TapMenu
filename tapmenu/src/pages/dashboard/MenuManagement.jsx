@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Edit2, Trash2, Image, X, Upload, Info, Heart, Star } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Image, X, Upload, Heart, Star, Info } from 'lucide-react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 
 const categories = [
@@ -17,15 +17,34 @@ const menuCategories = [
 ]
 
 const initialMenuItems = [
-  { id: 1, name: 'Nasi Goreng Spesial', category: 'food', price: 15000, stock: true, image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=300&h=300&fit=crop', description: 'Nasi goreng dengan telur, ayam, dan sayuran', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false },
-  { id: 2, name: 'Ayam Bakar', category: 'food', price: 25000, stock: true, image: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=300&h=300&fit=crop', description: 'Ayam bakar bumbu kecap dengan sambal', discount: 0, tax: 10, isActive: true, isFavorite: true, isNew: false },
-  { id: 3, name: 'Mie Goreng', category: 'food', price: 12000, stock: true, image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=300&h=300&fit=crop', description: 'Mie goreng dengan telur dan sayuran', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false },
-  { id: 4, name: 'Soto Ayam', category: 'food', price: 15000, stock: false, image: 'https://images.unsplash.com/photo-1547928576-b822bc410f86?w=300&h=300&fit=crop', description: 'Soto ayam dengan kuah kuning', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false },
-  { id: 5, name: 'Gado-gado', category: 'food', price: 12000, stock: true, image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=300&h=300&fit=crop', description: 'Sayuran segar dengan bumbu kacang', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false },
-  { id: 6, name: 'Es Teh Manis', category: 'drink', price: 5000, stock: true, image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=300&h=300&fit=crop', description: 'Teh manis dingin', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false },
-  { id: 7, name: 'Es Jeruk', category: 'drink', price: 6000, stock: true, image: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=300&h=300&fit=crop', description: 'Jeruk peras dengan es', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: true },
-  { id: 8, name: 'Jus Alpukat', category: 'drink', price: 10000, stock: true, image: 'https://images.unsplash.com/photo-1638176066666-ffb2f013c7dd?w=300&h=300&fit=crop', description: 'Jus alpukat dengan susu', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false },
-  { id: 9, name: 'Kerupuk', category: 'snack', price: 3000, stock: true, image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=300&fit=crop', description: 'Kerupuk udang', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false },
+  {
+    id: 1,
+    name: 'Nasi Goreng Spesial',
+    category: 'food',
+    price: 25000,
+    stock: true,
+    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
+    description: 'Lengkap dengan telur dan sate.',
+    discount: 0,
+    tax: 10,
+    isActive: true,
+    isFavorite: true,
+    isNew: false,
+    variants: [
+      {
+        name: 'Level Pedas',
+        type: 'radio',
+        options: [
+          { name: 'Tidak Pedas', price: 0 },
+          { name: 'Sedang', price: 0 },
+          { name: 'Pedas', price: 0 }
+        ]
+      }
+    ]
+  },
+  { id: 2, name: 'Es Teh Manis', category: 'drink', price: 5000, stock: true, image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=300&q=80', description: 'Teh asli menyegarkan.', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false, variants: [] },
+  { id: 3, name: 'Ayam Bakar Madu', category: 'food', price: 35000, stock: true, image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=300&q=80', description: 'Ayam kampung bumbu madu.', discount: 15, tax: 10, isActive: true, isFavorite: false, isNew: true, variants: [] },
+  { id: 4, name: 'Pisang Keju', category: 'snack', price: 15000, stock: true, image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a3a2b7b?auto=format&fit=crop&w=300&q=80', description: 'Pisang kepok pilihan.', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false, variants: [] },
 ]
 
 export function MenuManagement() {
@@ -52,6 +71,7 @@ export function MenuManagement() {
     isFavorite: false,
     isNew: false,
     trackStock: false,
+    variants: [],
   })
 
   const handleDelete = (id) => {
@@ -75,6 +95,7 @@ export function MenuManagement() {
       isFavorite: false,
       isNew: false,
       trackStock: false,
+      variants: [],
     })
     setActiveTab('basic')
     setShowModal(true)
@@ -95,9 +116,81 @@ export function MenuManagement() {
       isFavorite: item.isFavorite || false,
       isNew: item.isNew || false,
       trackStock: !!item.stockAmount,
+      variants: item.variants || [],
     })
     setActiveTab('basic')
     setShowModal(true)
+  }
+
+  const toggleItemStatus = (id) => {
+    setMenuItems(menuItems.map(item =>
+      item.id === id ? { ...item, isActive: !item.isActive } : item
+    ))
+  }
+
+  // Variant management functions
+  const addVariantGroup = () => {
+    const newGroup = {
+      id: Date.now().toString(),
+      name: '',
+      type: 'radio',
+      options: [{ id: Date.now().toString() + '-opt', name: '', price: 0 }]
+    }
+    setFormData({ ...formData, variants: [...formData.variants, newGroup] })
+  }
+
+  const removeVariantGroup = (groupId) => {
+    setFormData({
+      ...formData,
+      variants: formData.variants.filter(g => g.id !== groupId)
+    })
+  }
+
+  const updateVariantGroup = (groupId, field, value) => {
+    setFormData({
+      ...formData,
+      variants: formData.variants.map(g =>
+        g.id === groupId ? { ...g, [field]: value } : g
+      )
+    })
+  }
+
+  const addVariantOption = (groupId) => {
+    setFormData({
+      ...formData,
+      variants: formData.variants.map(g =>
+        g.id === groupId
+          ? { ...g, options: [...g.options, { id: Date.now().toString(), name: '', price: 0 }] }
+          : g
+      )
+    })
+  }
+
+  const removeVariantOption = (groupId, optionId) => {
+    setFormData({
+      ...formData,
+      variants: formData.variants.map(g =>
+        g.id === groupId
+          ? { ...g, options: g.options.filter(o => o.id !== optionId) }
+          : g
+      )
+    })
+  }
+
+  const updateVariantOption = (groupId, optionId, field, value) => {
+    setFormData({
+      ...formData,
+      variants: formData.variants.map(g =>
+        g.id === groupId
+          ? {
+              ...g,
+              options: g.options.map(o =>
+                o.id === optionId ? { ...o, [field]: value } : o
+              )
+            }
+          : g
+      )
+    })
   }
 
   const handleImageUpload = (e) => {
@@ -121,6 +214,14 @@ export function MenuManagement() {
       return
     }
 
+    // Clean up variants - remove empty options and groups
+    const cleanedVariants = formData.variants
+      .map(group => ({
+        ...group,
+        options: group.options.filter(opt => opt.name.trim() !== '')
+      }))
+      .filter(group => group.name.trim() !== '' && group.options.length > 0)
+
     const menuData = {
       name: formData.name,
       category: formData.category,
@@ -134,6 +235,7 @@ export function MenuManagement() {
       isActive: formData.isActive,
       isFavorite: formData.isFavorite,
       isNew: formData.isNew,
+      variants: cleanedVariants,
     }
 
     if (editingItem) {
@@ -216,58 +318,118 @@ export function MenuManagement() {
           {/* Menu List (Grid) */}
           {filteredItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 group"
-                >
-                  {/* Image */}
-                  <div className="aspect-square bg-gray-50 flex items-center justify-center relative overflow-hidden">
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    ) : (
-                      <Image className="w-8 h-8 text-gray-300" />
-                    )}
-                    <div className="absolute top-3 right-3">
-                      <span className={`px-2.5 py-1 text-xs font-bold rounded-full ${
-                        item.stock
-                          ? 'bg-secondary text-primary'
-                          : 'bg-red-100 text-red-600'
-                      }`}>
-                        {item.stock ? 'Tersedia' : 'Habis'}
-                      </span>
-                    </div>
-                  </div>
+              {filteredItems.map((item) => {
+                const hasDiscount = item.discount > 0
+                const finalPrice = hasDiscount ? item.price * ((100 - item.discount) / 100) : item.price
+                const categoryLabel = item.category === 'food' ? 'Makanan' : item.category === 'drink' ? 'Minuman' : 'Cemilan'
 
-                  {/* Content */}
-                  <div className="p-4">
-                    <div className="mb-3">
-                      <h3 className="text-base font-bold text-dark group-hover:text-primary transition-colors line-clamp-1">{item.name}</h3>
-                      <p className="text-xs text-gray-500 line-clamp-2 mt-1">{item.description}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <span className="text-lg font-extrabold text-primary">
-                        Rp {item.price.toLocaleString('id-ID')}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openEditModal(item)}
-                          className="w-8 h-8 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-50 transition-colors flex items-center justify-center"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                return (
+                  <div
+                    key={item.id}
+                    className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 group overflow-hidden flex flex-col h-full ${!item.isActive ? 'opacity-75 grayscale-[0.5]' : ''}`}
+                  >
+                    {/* Image */}
+                    <div className="h-40 bg-gray-100 relative overflow-hidden">
+                      {item.image ? (
+                        <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Image className="w-8 h-8 text-gray-300" />
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2">
                         <button
                           onClick={() => handleDelete(item.id)}
-                          className="w-8 h-8 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center"
+                          className="w-8 h-8 bg-white/90 backdrop-blur rounded-lg text-red-400 hover:text-red-600 flex items-center justify-center shadow-sm transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
+                      <div className="absolute bottom-2 left-2 flex gap-1">
+                        <span className="bg-black/60 backdrop-blur text-white px-2 py-1 rounded text-xs font-bold">
+                          {categoryLabel}
+                        </span>
+                        {hasDiscount && (
+                          <span className="bg-red-500 text-white px-2 py-1 rounded text-xs font-bold">
+                            -{item.discount}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-bold text-dark text-lg leading-tight line-clamp-1">{item.name}</h3>
+                      </div>
+
+                      {/* Labels */}
+                      <div className="mb-2 flex flex-wrap gap-1 items-center">
+                        {item.isFavorite && (
+                          <span className="bg-[#FFF0EB] text-accent text-[10px] font-bold px-2 py-0.5 rounded-full border border-accent/20">
+                            Favorit
+                          </span>
+                        )}
+                        {item.isNew && (
+                          <span className="bg-secondary text-primary text-[10px] font-bold px-2 py-0.5 rounded-full border border-primary/20">
+                            Baru
+                          </span>
+                        )}
+                        {item.variants && item.variants.length > 0 && (
+                          <span className="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-gray-200">
+                            {item.variants.length} Varian
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-gray-500 mb-3 line-clamp-2 flex-1">{item.description}</p>
+
+                      {/* Price */}
+                      <div className="mb-4">
+                        {hasDiscount ? (
+                          <>
+                            <span className="text-gray-400 text-xs line-through mr-1">
+                              Rp {item.price.toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-accent font-extrabold text-lg">
+                              Rp {finalPrice.toLocaleString('id-ID')}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-accent font-extrabold text-lg">
+                            Rp {item.price.toLocaleString('id-ID')}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                        <div className="flex items-center gap-2">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={item.isActive}
+                              onChange={() => toggleItemStatus(item.id)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                          </label>
+                          <span className={`text-xs font-bold ${item.isActive ? 'text-primary' : 'text-red-500'}`}>
+                            {item.isActive ? 'Tersedia' : 'Habis'}
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="text-primary hover:bg-secondary/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                        >
+                          Edit <Edit2 className="w-3 h-3 inline ml-1" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             /* Empty State */
@@ -321,6 +483,16 @@ export function MenuManagement() {
                 }`}
               >
                 Harga & Pajak
+              </button>
+              <button
+                onClick={() => setActiveTab('variants')}
+                className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === 'variants'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-500 hover:text-dark'
+                }`}
+              >
+                Varian
               </button>
               <button
                 onClick={() => setActiveTab('others')}
@@ -484,7 +656,104 @@ export function MenuManagement() {
                 </div>
               )}
 
-              {/* TAB 3: STOK & LAINNYA */}
+              {/* TAB 3: VARIAN */}
+              {activeTab === 'variants' && (
+                <div className="space-y-6 fade-in">
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 items-start">
+                    <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="text-xs font-bold text-blue-800">Info Varian</h4>
+                      <p className="text-[10px] text-blue-600">
+                        Gunakan varian untuk opsi tambahan seperti "Level Pedas" (Pilih Satu) atau "Toping Tambahan" (Pilih Banyak).
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {formData.variants.map((group) => (
+                      <div key={group.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200 relative">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1 grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Grup</label>
+                              <input
+                                type="text"
+                                value={group.name}
+                                onChange={(e) => updateVariantGroup(group.id, 'name', e.target.value)}
+                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                                placeholder="Cth: Level Pedas"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipe Pilihan</label>
+                              <select
+                                value={group.type}
+                                onChange={(e) => updateVariantGroup(group.id, 'type', e.target.value)}
+                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                              >
+                                <option value="radio">Pilih Satu (Wajib)</option>
+                                <option value="checkbox">Pilih Banyak (Opsional)</option>
+                              </select>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => removeVariantGroup(group.id)}
+                            className="ml-3 text-gray-400 hover:text-red-500"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-2">
+                          {group.options.map((option) => (
+                            <div key={option.id} className="flex gap-2 items-center">
+                              <input
+                                type="text"
+                                value={option.name}
+                                onChange={(e) => updateVariantOption(group.id, option.id, 'name', e.target.value)}
+                                className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
+                                placeholder="Nama Opsi (Cth: Sedang)"
+                              />
+                              <div className="relative w-24">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">+Rp</span>
+                                <input
+                                  type="number"
+                                  value={option.price}
+                                  onChange={(e) => updateVariantOption(group.id, option.id, 'price', parseInt(e.target.value) || 0)}
+                                  className="w-full bg-white border border-gray-200 rounded-lg pl-8 pr-2 py-2 text-xs focus:outline-none focus:border-primary"
+                                  placeholder="0"
+                                />
+                              </div>
+                              <button
+                                onClick={() => removeVariantOption(group.id, option.id)}
+                                className="text-gray-300 hover:text-red-500"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={() => addVariantOption(group.id)}
+                          className="mt-3 text-xs font-bold text-primary hover:underline"
+                        >
+                          + Tambah Opsi
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={addVariantGroup}
+                    className="w-full py-3 border-2 border-dashed border-primary/30 rounded-xl text-primary font-bold text-sm hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" /> Tambah Grup Varian
+                  </button>
+                </div>
+              )}
+
+              {/* TAB 4: STOK & LAINNYA */}
               {activeTab === 'others' && (
                 <div className="space-y-6 fade-in">
 

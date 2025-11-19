@@ -19,7 +19,7 @@ export function DashboardLayout({ children }) {
     }`
 
   return (
-    <div className="fixed inset-0 bg-[#F7F5F2] flex fade-in">
+    <div className="min-h-screen bg-[#F7F5F2] flex fade-in">
 
       {/* SIDEBAR (Desktop) */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex-col transition-transform duration-300 md:translate-x-0 md:static md:flex ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -44,7 +44,7 @@ export function DashboardLayout({ children }) {
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Utama</div>
 
           <Link to="/dashboard" className={navLinkClass('/dashboard')}>
-            <i className="fa-solid fa-grid-2 w-5"></i> Dashboard
+            <i className="fa-solid fa-house w-5"></i> Dashboard
           </Link>
           <Link to="/dashboard/orders" className={navLinkClass('/dashboard/orders')}>
             <i className="fa-solid fa-receipt w-5"></i> Pesanan
@@ -64,6 +64,18 @@ export function DashboardLayout({ children }) {
           </Link>
           <Link to="/dashboard/cashier" className={navLinkClass('/dashboard/cashier')}>
             <i className="fa-solid fa-wallet w-5"></i> Kasir
+          </Link>
+
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3 px-2">Pengaturan</div>
+
+          <Link to="/dashboard/settings/store" className={navLinkClass('/dashboard/settings/store')}>
+            <i className="fa-solid fa-store w-5"></i> Profil Toko
+          </Link>
+          <Link to="/dashboard/settings/appearance" className={navLinkClass('/dashboard/settings/appearance')}>
+            <i className="fa-solid fa-palette w-5"></i> Tampilan Menu
+          </Link>
+          <Link to="/dashboard/settings/profile" className={navLinkClass('/dashboard/settings/profile')}>
+            <i className="fa-solid fa-user-gear w-5"></i> Akun Saya
           </Link>
         </div>
 
@@ -136,7 +148,7 @@ export function DashboardLayout({ children }) {
       <main className="flex-1 h-screen overflow-y-auto relative w-full">
 
         {/* Header Mobile & Desktop */}
-        <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0">
           {/* Mobile Toggle */}
           <div className="flex items-center gap-4 md:hidden">
             <button

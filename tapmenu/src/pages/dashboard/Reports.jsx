@@ -1,282 +1,406 @@
-import { useState } from 'react'
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  ShoppingCart,
-  Users,
-  Calendar,
-  Download,
-  ArrowUpRight,
-  ArrowDownRight
-} from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 
-const periods = [
-  { id: 'today', name: 'Hari Ini' },
-  { id: 'week', name: 'Minggu Ini' },
-  { id: 'month', name: 'Bulan Ini' },
-  { id: 'year', name: 'Tahun Ini' },
-]
-
-const summaryStats = {
+// Data dummy
+const reportData = {
   today: {
-    revenue: { value: 2450000, change: 12, trend: 'up' },
-    orders: { value: 47, change: 5, trend: 'up' },
-    customers: { value: 38, change: 8, trend: 'up' },
-    avgOrder: { value: 52127, change: -3, trend: 'down' },
+    revenue: 1250000,
+    transactions: 45,
+    average: 27777,
+    chartLabels: ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"],
+    chartData: [150000, 300000, 550000, 200000, 400000, 600000, 350000],
+    employees: [
+      { name: "Siti Aminah", transactions: 20, total: 600000, avatar: "https://i.pravatar.cc/150?img=1" },
+      { name: "Andi Setiawan", transactions: 15, total: 450000, avatar: "https://i.pravatar.cc/150?img=3" },
+      { name: "Rini Wati", transactions: 10, total: 200000, avatar: "https://i.pravatar.cc/150?img=5" }
+    ]
   },
   week: {
-    revenue: { value: 15680000, change: 18, trend: 'up' },
-    orders: { value: 312, change: 12, trend: 'up' },
-    customers: { value: 245, change: 15, trend: 'up' },
-    avgOrder: { value: 50256, change: 5, trend: 'up' },
+    revenue: 8450000,
+    transactions: 320,
+    average: 26406,
+    chartLabels: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"],
+    chartData: [1100000, 1250000, 900000, 1400000, 1800000, 2100000, 1600000],
+    employees: [
+      { name: "Siti Aminah", transactions: 120, total: 3500000, avatar: "https://i.pravatar.cc/150?img=1" },
+      { name: "Andi Setiawan", transactions: 110, total: 3000000, avatar: "https://i.pravatar.cc/150?img=3" },
+      { name: "Rini Wati", transactions: 90, total: 1950000, avatar: "https://i.pravatar.cc/150?img=5" }
+    ]
   },
   month: {
-    revenue: { value: 68450000, change: 22, trend: 'up' },
-    orders: { value: 1347, change: 18, trend: 'up' },
-    customers: { value: 892, change: 25, trend: 'up' },
-    avgOrder: { value: 50815, change: 3, trend: 'up' },
-  },
-  year: {
-    revenue: { value: 756000000, change: 35, trend: 'up' },
-    orders: { value: 15234, change: 28, trend: 'up' },
-    customers: { value: 8456, change: 42, trend: 'up' },
-    avgOrder: { value: 49625, change: 7, trend: 'up' },
-  },
+    revenue: 35600000,
+    transactions: 1450,
+    average: 24551,
+    chartLabels: ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"],
+    chartData: [8500000, 9200000, 8100000, 9800000],
+    employees: [
+      { name: "Siti Aminah", transactions: 500, total: 14000000, avatar: "https://i.pravatar.cc/150?img=1" },
+      { name: "Andi Setiawan", transactions: 480, total: 12500000, avatar: "https://i.pravatar.cc/150?img=3" },
+      { name: "Rini Wati", transactions: 470, total: 9100000, avatar: "https://i.pravatar.cc/150?img=5" }
+    ]
+  }
 }
 
-const dailyRevenue = [
-  { day: 'Sen', revenue: 2100000 },
-  { day: 'Sel', revenue: 2350000 },
-  { day: 'Rab', revenue: 1980000 },
-  { day: 'Kam', revenue: 2650000 },
-  { day: 'Jum', revenue: 3200000 },
-  { day: 'Sab', revenue: 3800000 },
-  { day: 'Min', revenue: 2450000 },
-]
-
-const topProducts = [
-  { name: 'Nasi Goreng Spesial', sold: 156, revenue: 2340000, percentage: 18 },
-  { name: 'Ayam Bakar', sold: 124, revenue: 3100000, percentage: 24 },
-  { name: 'Mie Goreng', sold: 98, revenue: 1176000, percentage: 9 },
-  { name: 'Es Teh Manis', sold: 234, revenue: 1170000, percentage: 9 },
-  { name: 'Soto Ayam', sold: 87, revenue: 1305000, percentage: 10 },
-]
-
-const paymentMethods = [
-  { method: 'QRIS', count: 189, amount: 9450000, percentage: 60 },
-  { method: 'Cash', count: 78, amount: 3900000, percentage: 25 },
-  { method: 'Transfer', count: 45, amount: 2330000, percentage: 15 },
+const transactions = [
+  { id: "ORD-0094", time: "14:30", cashier: "Siti Aminah", method: "Tunai", total: 45000 },
+  { id: "ORD-0093", time: "14:15", cashier: "Andi Setiawan", method: "QRIS", total: 120000 },
+  { id: "ORD-0092", time: "13:45", cashier: "Siti Aminah", method: "Tunai", total: 25000 },
+  { id: "ORD-0091", time: "13:30", cashier: "Rini Wati", method: "QRIS", total: 78000 },
+  { id: "ORD-0090", time: "13:10", cashier: "Siti Aminah", method: "Tunai", total: 33000 },
 ]
 
 export function Reports() {
-  const [selectedPeriod, setSelectedPeriod] = useState('week')
-  const stats = summaryStats[selectedPeriod]
+  const [filter, setFilter] = useState('today')
+  const [animatedRevenue, setAnimatedRevenue] = useState(0)
+  const [animatedTransactions, setAnimatedTransactions] = useState(0)
+  const [animatedAverage, setAnimatedAverage] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
+  const chartRef = useRef(null)
+  const chartInstance = useRef(null)
 
-  const maxRevenue = Math.max(...dailyRevenue.map(d => d.revenue))
+  const data = reportData[filter]
+
+  // Format Rupiah
+  const formatRupiah = (num) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      maximumFractionDigits: 0
+    }).format(num)
+  }
+
+  // Animate values
+  useEffect(() => {
+    const duration = 500
+    const steps = 30
+    const interval = duration / steps
+
+    const revenueStep = data.revenue / steps
+    const transStep = data.transactions / steps
+    const avgStep = data.average / steps
+
+    let current = 0
+    const timer = setInterval(() => {
+      current++
+      setAnimatedRevenue(Math.floor(revenueStep * current))
+      setAnimatedTransactions(Math.floor(transStep * current))
+      setAnimatedAverage(Math.floor(avgStep * current))
+
+      if (current >= steps) {
+        setAnimatedRevenue(data.revenue)
+        setAnimatedTransactions(data.transactions)
+        setAnimatedAverage(data.average)
+        clearInterval(timer)
+      }
+    }, interval)
+
+    return () => clearInterval(timer)
+  }, [filter, data])
+
+  // Initialize Chart
+  useEffect(() => {
+    const loadChart = async () => {
+      if (!chartRef.current) return
+
+      // Dynamically import Chart.js
+      const { Chart, registerables } = await import('chart.js')
+      Chart.register(...registerables)
+
+      const ctx = chartRef.current.getContext('2d')
+
+      // Destroy existing chart
+      if (chartInstance.current) {
+        chartInstance.current.destroy()
+      }
+
+      // Gradient Fill
+      const gradient = ctx.createLinearGradient(0, 0, 0, 400)
+      gradient.addColorStop(0, 'rgba(27, 67, 50, 0.2)')
+      gradient.addColorStop(1, 'rgba(27, 67, 50, 0)')
+
+      chartInstance.current = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.chartLabels,
+          datasets: [{
+            label: 'Pemasukan (Rp)',
+            data: data.chartData,
+            borderColor: '#1B4332',
+            backgroundColor: gradient,
+            borderWidth: 2,
+            pointBackgroundColor: '#ffffff',
+            pointBorderColor: '#1B4332',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#1B4332',
+              titleFont: { family: 'Plus Jakarta Sans' },
+              bodyFont: { family: 'Plus Jakarta Sans' },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: function (context) {
+                  return formatRupiah(context.raw)
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: '#f3f4f6'
+              },
+              ticks: {
+                callback: function (value) {
+                  if (value >= 1000000) return (value / 1000000) + 'jt'
+                  if (value >= 1000) return (value / 1000) + 'rb'
+                  return value
+                },
+                font: { family: 'Plus Jakarta Sans', size: 10 },
+                color: '#9ca3af'
+              }
+            },
+            x: {
+              grid: { display: false },
+              ticks: {
+                font: { family: 'Plus Jakarta Sans', size: 10 },
+                color: '#9ca3af'
+              }
+            }
+          }
+        }
+      })
+    }
+
+    loadChart()
+
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy()
+      }
+    }
+  }, [filter, data])
+
+  // Sort employees by total
+  const sortedEmployees = [...data.employees].sort((a, b) => b.total - a.total)
+  const maxTotal = sortedEmployees[0]?.total || 1
+
+  // Filter transactions
+  const filteredTransactions = transactions.filter(trx =>
+    trx.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    trx.cashier.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
-        {/* Page header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Laporan</h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Analisis performa bisnis Anda
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 -mt-4 mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-dark">Laporan & Keuangan</h2>
+          <p className="text-xs text-gray-500">Analisa penjualan toko dan kinerja tim</p>
+        </div>
+
+        {/* Date Filter */}
+        <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+          <button
+            onClick={() => setFilter('today')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
+              filter === 'today'
+                ? 'bg-gray-100 text-dark shadow-sm'
+                : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            Hari Ini
+          </button>
+          <button
+            onClick={() => setFilter('week')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
+              filter === 'week'
+                ? 'bg-gray-100 text-dark shadow-sm'
+                : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            Minggu Ini
+          </button>
+          <button
+            onClick={() => setFilter('month')}
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
+              filter === 'month'
+                ? 'bg-gray-100 text-dark shadow-sm'
+                : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            Bulan Ini
+          </button>
+          <div className="w-px h-4 bg-gray-200 mx-1"></div>
+          <button className="px-2 py-1.5 text-gray-400 hover:text-primary text-xs">
+            <i className="fa-regular fa-calendar"></i>
+          </button>
+        </div>
+      </div>
+
+      {/* 1. SUMMARY CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Omzet */}
+        <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-secondary/30 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+                <i className="fa-solid fa-wallet"></i>
+              </div>
+              <p className="text-xs font-bold text-gray-500 uppercase">Total Pemasukan</p>
+            </div>
+            <h3 className="text-2xl font-extrabold text-dark mb-1">{formatRupiah(animatedRevenue)}</h3>
+            <p className="text-xs text-green-600 font-medium flex items-center gap-1">
+              <i className="fa-solid fa-arrow-trend-up"></i> +12% <span className="text-gray-400 font-normal">vs periode lalu</span>
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500 rounded-lg transition-colors">
-              <Download className="w-4 h-4" />
-              Export PDF
+        </div>
+
+        {/* Transaksi */}
+        <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                <i className="fa-solid fa-receipt"></i>
+              </div>
+              <p className="text-xs font-bold text-gray-500 uppercase">Total Transaksi</p>
+            </div>
+            <h3 className="text-2xl font-extrabold text-dark mb-1">{animatedTransactions}</h3>
+            <p className="text-xs text-blue-600 font-medium flex items-center gap-1">
+              <i className="fa-solid fa-check-double"></i> +5 <span className="text-gray-400 font-normal">pesanan baru</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Rata-rata */}
+        <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center">
+                <i className="fa-solid fa-basket-shopping"></i>
+              </div>
+              <p className="text-xs font-bold text-gray-500 uppercase">Rata-rata Order</p>
+            </div>
+            <h3 className="text-2xl font-extrabold text-dark mb-1">{formatRupiah(animatedAverage)}</h3>
+            <p className="text-xs text-gray-400 font-normal">
+              Per pelanggan per transaksi
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. CHART & EMPLOYEE STATS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        {/* Chart Section */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-card border border-gray-100">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-dark text-lg">Grafik Penjualan</h3>
+            <button className="text-xs text-primary font-bold border border-primary/20 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors">
+              Download PDF
             </button>
           </div>
-        </div>
-
-        {/* Period selector */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
-          {periods.map((period) => (
-            <button
-              key={period.id}
-              onClick={() => setSelectedPeriod(period.id)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-colors ${
-                selectedPeriod === period.id
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500'
-              }`}
-            >
-              {period.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Summary stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-                <DollarSign className="w-5 h-5" />
-              </div>
-              <div className={`flex items-center gap-1 text-xs font-medium ${
-                stats.revenue.trend === 'up' ? 'text-emerald-600' : 'text-red-600'
-              }`}>
-                {stats.revenue.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {stats.revenue.change}%
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-              Rp {stats.revenue.value.toLocaleString('id-ID')}
-            </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Total Pendapatan</p>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                <ShoppingCart className="w-5 h-5" />
-              </div>
-              <div className={`flex items-center gap-1 text-xs font-medium ${
-                stats.orders.trend === 'up' ? 'text-emerald-600' : 'text-red-600'
-              }`}>
-                {stats.orders.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {stats.orders.change}%
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-white">{stats.orders.value}</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Total Pesanan</p>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-                <Users className="w-5 h-5" />
-              </div>
-              <div className={`flex items-center gap-1 text-xs font-medium ${
-                stats.customers.trend === 'up' ? 'text-emerald-600' : 'text-red-600'
-              }`}>
-                {stats.customers.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {stats.customers.change}%
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-white">{stats.customers.value}</p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Total Pelanggan</p>
-          </div>
-
-          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div className={`flex items-center gap-1 text-xs font-medium ${
-                stats.avgOrder.trend === 'up' ? 'text-emerald-600' : 'text-red-600'
-              }`}>
-                {stats.avgOrder.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                {Math.abs(stats.avgOrder.change)}%
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-zinc-900 dark:text-white">
-              Rp {stats.avgOrder.value.toLocaleString('id-ID')}
-            </p>
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">Rata-rata Pesanan</p>
+          <div className="relative h-64 w-full">
+            <canvas ref={chartRef}></canvas>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Revenue chart */}
-          <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Pendapatan Mingguan</h3>
-            <div className="flex items-end justify-between gap-2 h-48">
-              {dailyRevenue.map((item) => (
-                <div key={item.day} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-t-lg relative" style={{ height: '160px' }}>
-                    <div
-                      className="absolute bottom-0 left-0 right-0 bg-emerald-500 rounded-t-lg transition-all"
-                      style={{ height: `${(item.revenue / maxRevenue) * 100}%` }}
-                    />
+        {/* Employee Performance */}
+        <div className="bg-white p-6 rounded-2xl shadow-card border border-gray-100 flex flex-col">
+          <h3 className="font-bold text-dark text-lg mb-1">Top Performa Kasir</h3>
+          <p className="text-xs text-gray-400 mb-6">Berdasarkan total nominal transaksi.</p>
+
+          <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+            {sortedEmployees.map((emp, index) => {
+              const rankColor = index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : 'text-orange-700'
+              const percent = Math.round((emp.total / maxTotal) * 100)
+
+              return (
+                <div key={emp.name} className="flex items-center gap-3 group">
+                  <div className={`w-6 text-center font-bold text-sm ${rankColor}`}>#{index + 1}</div>
+                  <div className="relative">
+                    <img src={emp.avatar} alt={emp.name} className="w-10 h-10 rounded-full object-cover border border-gray-100" />
                   </div>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">{item.day}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between mb-1">
+                      <h4 className="font-bold text-sm text-dark truncate">{emp.name}</h4>
+                      <span className="font-bold text-xs text-primary">{formatRupiah(emp.total)}</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                      <div className="bg-primary h-1.5 rounded-full" style={{ width: `${percent}%` }}></div>
+                    </div>
+                    <p className="text-[10px] text-gray-400 mt-1">{emp.transactions} Transaksi</p>
+                  </div>
                 </div>
-              ))}
-            </div>
+              )
+            })}
           </div>
 
-          {/* Payment methods */}
-          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">Metode Pembayaran</h3>
-            <div className="space-y-4">
-              {paymentMethods.map((method) => (
-                <div key={method.method}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-zinc-900 dark:text-white">{method.method}</span>
-                    <span className="text-sm text-zinc-500 dark:text-zinc-400">{method.percentage}%</span>
-                  </div>
-                  <div className="w-full h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 rounded-full"
-                      style={{ width: `${method.percentage}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                    {method.count} transaksi - Rp {method.amount.toLocaleString('id-ID')}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <button className="w-full mt-6 py-2.5 text-xs font-bold text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+            Lihat Detail Absensi
+          </button>
+        </div>
+      </div>
+
+      {/* 3. RECENT TRANSACTIONS TABLE */}
+      <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+          <h3 className="font-bold text-dark text-lg">Riwayat Transaksi Terakhir</h3>
+          <div className="relative">
+            <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+            <input
+              type="text"
+              placeholder="Cari No. Order..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 pr-4 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-primary"
+            />
           </div>
         </div>
-
-        {/* Top products */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800">
-          <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">Produk Terlaris</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Produk</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Terjual</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Pendapatan</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Kontribusi</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4">No. Order</th>
+                <th className="px-6 py-4">Waktu</th>
+                <th className="px-6 py-4">Kasir</th>
+                <th className="px-6 py-4">Metode</th>
+                <th className="px-6 py-4 text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-sm text-dark">
+              {filteredTransactions.map((trx) => (
+                <tr key={trx.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-mono text-xs font-bold text-primary">{trx.id}</td>
+                  <td className="px-6 py-4 text-gray-500">{trx.time}</td>
+                  <td className="px-6 py-4 font-bold text-dark">{trx.cashier}</td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
+                      trx.method === 'QRIS'
+                        ? 'bg-blue-50 text-blue-600'
+                        : 'bg-green-50 text-green-600'
+                    }`}>
+                      {trx.method}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right font-bold text-dark">{formatRupiah(trx.total)}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-                {topProducts.map((product, index) => (
-                  <tr key={product.name} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                          {index + 1}
-                        </span>
-                        <span className="text-sm font-medium text-zinc-900 dark:text-white">{product.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-zinc-600 dark:text-zinc-400">{product.sold}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-zinc-900 dark:text-white">
-                        Rp {product.revenue.toLocaleString('id-ID')}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-emerald-500 rounded-full"
-                            style={{ width: `${product.percentage}%` }}
-                          />
-                        </div>
-                        <span className="text-sm text-zinc-500 dark:text-zinc-400">{product.percentage}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </DashboardLayout>

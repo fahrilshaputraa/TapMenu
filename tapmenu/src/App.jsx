@@ -9,11 +9,11 @@ import { Orders } from './pages/dashboard/Orders'
 import { MenuManagement } from './pages/dashboard/MenuManagement'
 import { Tables } from './pages/dashboard/Tables'
 import { TableForm } from './pages/dashboard/TableForm'
-import { MenuForm } from './pages/dashboard/MenuForm'
 import { Reports } from './pages/dashboard/Reports'
 import { Settings } from './pages/dashboard/Settings'
 import { ProfileSettings } from './pages/dashboard/ProfileSettings'
 import { StoreSettings } from './pages/dashboard/StoreSettings'
+import { MenuAppearance } from './pages/dashboard/MenuAppearance'
 import { CustomerMenu } from './pages/customer/Menu'
 
 function App() {
@@ -28,8 +28,6 @@ function App() {
         <Route path="/dashboard/cashier" element={<Cashier />} />
         <Route path="/dashboard/orders" element={<Orders />} />
         <Route path="/dashboard/menu" element={<MenuManagement />} />
-        <Route path="/dashboard/menu/add" element={<MenuForm />} />
-        <Route path="/dashboard/menu/edit/:id" element={<MenuForm />} />
         <Route path="/dashboard/tables" element={<Tables />} />
         <Route path="/dashboard/tables/add" element={<TableForm />} />
         <Route path="/dashboard/tables/edit/:id" element={<TableForm />} />
@@ -37,6 +35,7 @@ function App() {
         <Route path="/dashboard/settings" element={<Settings />} />
         <Route path="/dashboard/settings/profile" element={<ProfileSettings />} />
         <Route path="/dashboard/settings/store" element={<StoreSettings />} />
+        <Route path="/dashboard/settings/appearance" element={<MenuAppearance />} />
         <Route path="/order/:tableId" element={<CustomerMenu />} />
         <Route path="/order" element={<CustomerMenu />} />
       </Routes>

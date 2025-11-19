@@ -15,33 +15,63 @@ const categories = [
   { id: 'food', name: 'Makanan Berat' },
   { id: 'drink', name: 'Minuman' },
   { id: 'snack', name: 'Cemilan' },
-  { id: 'promo', name: 'Promo' },
-]
-
-const addOns = [
-  { id: 'telur', name: 'Tambah Telur', price: 5000 },
-  { id: 'keju', name: 'Tambah Keju', price: 7000 },
-  { id: 'sambal', name: 'Extra Sambal', price: 3000 },
-  { id: 'nasi', name: 'Extra Nasi', price: 5000 },
-  { id: 'ayam', name: 'Extra Ayam', price: 10000 },
-  { id: 'sayur', name: 'Extra Sayuran', price: 4000 },
 ]
 
 const menuItems = [
-  { id: 1, name: 'Nasi Goreng Spesial', category: 'food', price: 25000, stock: true, image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=800&auto=format&fit=crop&q=60', description: 'Nasi goreng dengan telur, ayam, dan sayuran segar', rating: 4.8, reviews: 156, badge: 'Terlaris', addOns: ['telur', 'keju', 'sambal', 'ayam'] },
-  { id: 2, name: 'Ayam Bakar', category: 'food', price: 35000, stock: true, image: 'https://images.unsplash.com/photo-1632778149955-e80f8ceca2e8?w=800&auto=format&fit=crop&q=60', description: 'Ayam bakar bumbu kecap dengan sambal dan lalapan', rating: 4.9, reviews: 203, addOns: ['nasi', 'sambal', 'sayur'] },
-  { id: 3, name: 'Mie Goreng', category: 'food', price: 20000, stock: true, image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=800&auto=format&fit=crop&q=60', description: 'Mie goreng dengan telur dan sayuran', rating: 4.6, reviews: 98, addOns: ['telur', 'keju', 'ayam'] },
-  { id: 4, name: 'Soto Ayam', category: 'food', price: 22000, stock: false, image: 'https://images.unsplash.com/photo-1547928576-b822bc410f7c?w=800&auto=format&fit=crop&q=60', description: 'Soto ayam dengan kuah kuning yang gurih', rating: 4.7, reviews: 134, addOns: ['telur', 'nasi', 'ayam'] },
-  { id: 5, name: 'Ayam Geprek', category: 'food', price: 28000, originalPrice: 35000, stock: true, image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=800&auto=format&fit=crop&q=60', description: 'Ayam crispy dengan sambal geprek pedas', rating: 4.8, reviews: 187, badge: 'Promo', isPromo: true, addOns: ['nasi', 'keju', 'sambal', 'telur'] },
-  { id: 6, name: 'Gado-gado', category: 'food', price: 18000, stock: true, image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=800&auto=format&fit=crop&q=60', description: 'Sayuran segar dengan bumbu kacang', rating: 4.5, reviews: 76, addOns: ['telur', 'sayur'] },
-  { id: 7, name: 'Ramen Sapi', category: 'food', price: 45000, stock: true, image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800&auto=format&fit=crop&q=60', description: 'Ramen dengan kuah kaldu sapi yang kaya rasa', rating: 4.9, reviews: 212, badge: 'Baru', addOns: ['telur', 'keju', 'sayur'] },
-  { id: 8, name: 'Es Teh Manis', category: 'drink', price: 8000, stock: true, image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800&auto=format&fit=crop&q=60', description: 'Teh manis dingin yang menyegarkan', rating: 4.4, reviews: 89 },
-  { id: 9, name: 'Es Jeruk', category: 'drink', price: 10000, stock: true, image: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=800&auto=format&fit=crop&q=60', description: 'Jeruk peras segar dengan es', rating: 4.5, reviews: 67 },
-  { id: 10, name: 'Es Kopi Susu', category: 'drink', price: 22000, stock: true, image: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=800&auto=format&fit=crop&q=60', description: 'Kopi susu dengan es yang creamy', rating: 4.7, reviews: 145 },
-  { id: 11, name: 'Jus Alpukat', category: 'drink', price: 15000, stock: true, image: 'https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?w=800&auto=format&fit=crop&q=60', description: 'Jus alpukat creamy dengan susu', rating: 4.6, reviews: 92 },
-  { id: 12, name: 'Kue Coklat', category: 'snack', price: 30000, stock: true, image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&auto=format&fit=crop&q=60', description: 'Kue coklat lembut dengan topping coklat leleh', rating: 4.8, reviews: 178 },
-  { id: 13, name: 'Kerupuk', category: 'snack', price: 5000, stock: true, image: 'https://images.unsplash.com/photo-1599490659213-e2b9527bd087?w=800&auto=format&fit=crop&q=60', description: 'Kerupuk udang renyah', rating: 4.3, reviews: 45 },
-  { id: 14, name: 'Tempe Goreng', category: 'snack', price: 8000, stock: true, image: 'https://images.unsplash.com/photo-1632709810780-b5a4343cebec?w=800&auto=format&fit=crop&q=60', description: 'Tempe goreng crispy dengan tepung', rating: 4.4, reviews: 56 },
+  {
+    id: 1,
+    name: "Nasi Goreng Spesial",
+    description: "Dengan telur mata sapi, sate ayam, dan kerupuk udang.",
+    price: 25000,
+    stock: true,
+    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80",
+    category: "food"
+  },
+  {
+    id: 2,
+    name: "Ayam Bakar Madu",
+    description: "Ayam kampung bakar dengan olesan madu dan sambal terasi.",
+    price: 28000,
+    stock: true,
+    image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=400&q=80",
+    category: "food"
+  },
+  {
+    id: 3,
+    name: "Sate Ayam Madura",
+    description: "10 tusuk sate ayam dengan bumbu kacang kental.",
+    price: 30000,
+    stock: true,
+    image: "https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=400&q=80",
+    category: "food"
+  },
+  {
+    id: 4,
+    name: "Es Kopi Susu Gula Aren",
+    description: "Kopi arabika house blend dengan susu fresh milk.",
+    price: 18000,
+    stock: true,
+    image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=400&q=80",
+    category: "drink"
+  },
+  {
+    id: 5,
+    name: "Es Teh Manis Jumbo",
+    description: "Teh tubruk wangi melati dengan gula asli.",
+    price: 8000,
+    stock: true,
+    image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=400&q=80",
+    category: "drink"
+  },
+  {
+    id: 6,
+    name: "Pisang Goreng Keju",
+    description: "Pisang kepok kuning digoreng crispy topping keju.",
+    price: 15000,
+    stock: true,
+    image: "https://images.unsplash.com/photo-1519708227418-c8fd9a3a2b7b?auto=format&fit=crop&w=400&q=80",
+    category: "snack"
+  }
 ]
 
 export function CustomerMenu() {
@@ -52,17 +82,19 @@ export function CustomerMenu() {
   const [cart, setCart] = useState([])
   const [showCart, setShowCart] = useState(false)
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
-  const [orderNumber, setOrderNumber] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('cash')
 
   const tableName = tableId ? `Meja ${tableId}` : 'Bawa Pulang'
 
   const filteredItems = menuItems.filter(item => {
-    if (selectedCategory === 'promo') return item.isPromo
     if (selectedCategory !== 'all' && item.category !== selectedCategory) return false
     if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
   })
+
+  const getItemQuantity = (itemId) => {
+    const cartItem = cart.find(item => item.id === itemId)
+    return cartItem ? cartItem.quantity : 0
+  }
 
   const addToCart = (item) => {
     if (!item.stock) return
@@ -98,16 +130,16 @@ export function CustomerMenu() {
   const handleOrder = () => {
     if (cart.length === 0) return
 
-    const newOrderNumber = '#' + String(Math.floor(Math.random() * 10000)).padStart(4, '0')
-    setOrderNumber(newOrderNumber)
     setShowCart(false)
-    setShowOrderSuccess(true)
+    // Simulasi loading
+    setTimeout(() => {
+      setShowOrderSuccess(true)
+    }, 300)
   }
 
   const resetOrder = () => {
     setCart([])
     setShowOrderSuccess(false)
-    setPaymentMethod('cash')
     window.location.reload()
   }
 
@@ -177,37 +209,50 @@ export function CustomerMenu() {
 
       {/* Menu List Grid */}
       <main className="px-4 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="menu-container">
-        {filteredItems.map((item) => (
-          <div key={item.id} className="bg-white rounded-2xl p-4 shadow-card flex gap-4">
-            <div className="w-24 h-24 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden relative">
-              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-              {!item.stock && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">Habis</span>
+        {filteredItems.map((item) => {
+          const qty = getItemQuantity(item.id)
+          return (
+            <div key={item.id} className="bg-white p-4 rounded-2xl shadow-card flex gap-4 items-center md:items-start group">
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 relative">
+                <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-dark text-lg leading-tight mb-1 truncate">{item.name}</h3>
+                <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{item.description}</p>
+                <div className="flex justify-between items-end">
+                  <span className="font-bold text-accent text-lg">Rp {item.price.toLocaleString('id-ID')}</span>
+
+                  <div className="flex items-center">
+                    {qty === 0 ? (
+                      <button
+                        onClick={() => addToCart(item)}
+                        className="w-9 h-9 bg-secondary text-primary rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-colors shadow-sm"
+                      >
+                        <i className="fa-solid fa-plus"></i>
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-3 bg-[#F7F5F2] rounded-lg p-1 border border-gray-200">
+                        <button
+                          onClick={() => updateQuantity(item.id, -1)}
+                          className="w-7 h-7 bg-white text-primary rounded flex items-center justify-center shadow-sm"
+                        >
+                          <i className="fa-solid fa-minus text-xs"></i>
+                        </button>
+                        <span className="font-bold text-dark text-sm w-2 text-center">{qty}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, 1)}
+                          className="w-7 h-7 bg-primary text-white rounded flex items-center justify-center shadow-sm"
+                        >
+                          <i className="fa-solid fa-plus text-xs"></i>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
-            <div className="flex-1 flex flex-col justify-between">
-              <div>
-                <h3 className="font-bold text-dark line-clamp-2">{item.name}</h3>
-                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
-              </div>
-              <div className="flex justify-between items-end mt-3">
-                <span className="font-bold text-primary">Rp {item.price.toLocaleString('id-ID')}</span>
-                {item.stock ? (
-                  <button
-                    onClick={() => addToCart(item)}
-                    className="w-8 h-8 bg-secondary text-primary rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
-                  >
-                    <i className="fa-solid fa-plus"></i>
-                  </button>
-                ) : (
-                  <span className="text-xs text-red-500 font-medium">Stok Habis</span>
-                )}
               </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </main>
 
       {/* Floating Cart Bar */}
@@ -262,61 +307,43 @@ export function CustomerMenu() {
 
             {/* Cart Items (Scrollable) */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll" id="cart-items-container">
-              {cart.map((item) => (
-                <div key={item.id} className="flex gap-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+              {cart.length === 0 ? (
+                <div className="text-center text-gray-400 py-10">Keranjang kosong</div>
+              ) : (
+                cart.map((item) => (
+                  <div key={item.id} className="flex gap-4 items-center border-b border-gray-100 pb-4 last:border-0">
+                    <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden shrink-0">
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-dark text-sm">{item.name}</h4>
+                      <p className="text-xs text-gray-500 mb-2">Rp {item.price.toLocaleString('id-ID')} / porsi</p>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3 bg-[#F7F5F2] rounded-lg p-1">
+                          <button
+                            onClick={() => updateQuantity(item.id, -1)}
+                            className="w-6 h-6 bg-white text-gray-500 rounded flex items-center justify-center shadow-sm hover:text-primary"
+                          >
+                            <i className="fa-solid fa-minus text-[10px]"></i>
+                          </button>
+                          <span className="font-bold text-dark text-xs w-4 text-center">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, 1)}
+                            className="w-6 h-6 bg-primary text-white rounded flex items-center justify-center shadow-sm"
+                          >
+                            <i className="fa-solid fa-plus text-[10px]"></i>
+                          </button>
+                        </div>
+                        <span className="font-bold text-primary text-sm">Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-dark line-clamp-1">{item.name}</h4>
-                    <p className="text-primary font-bold text-sm">Rp {item.price.toLocaleString('id-ID')}</p>
-                  </div>
-                  <div className="flex items-center gap-3 h-8">
-                    <button
-                      onClick={() => updateQuantity(item.id, -1)}
-                      className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50"
-                    >
-                      <i className="fa-solid fa-minus text-xs"></i>
-                    </button>
-                    <span className="font-bold text-dark w-4 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.id, 1)}
-                      className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-[#143326]"
-                    >
-                      <i className="fa-solid fa-plus text-xs"></i>
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {/* Bill Details & Checkout */}
             <div className="bg-white p-6 rounded-t-[2rem] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-              {/* Payment Method Selection */}
-              <div className="mb-6">
-                <h3 className="text-sm font-bold text-dark mb-3">Metode Pembayaran</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setPaymentMethod('cash')}
-                    className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'cash'
-                        ? 'border-primary bg-secondary text-primary font-bold'
-                        : 'border-gray-200 text-gray-500 hover:border-primary'
-                      }`}
-                  >
-                    <i className="fa-solid fa-money-bill-wave"></i> Tunai
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod('qris')}
-                    className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'qris'
-                        ? 'border-primary bg-secondary text-primary font-bold'
-                        : 'border-gray-200 text-gray-500 hover:border-primary'
-                      }`}
-                  >
-                    <i className="fa-solid fa-qrcode"></i> QRIS
-                  </button>
-                </div>
-              </div>
-
               <div className="space-y-3 mb-6 text-sm">
                 <div className="flex justify-between text-gray-500">
                   <span>Subtotal</span>
@@ -337,8 +364,7 @@ export function CustomerMenu() {
                 onClick={handleOrder}
                 className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-[#143326] transition-all flex justify-center items-center gap-2"
               >
-                <i className="fa-solid fa-paper-plane"></i>
-                {paymentMethod === 'qris' ? 'Bayar & Pesan' : 'Pesan Sekarang'}
+                <i className="fa-solid fa-paper-plane"></i> Pesan Sekarang
               </button>
             </div>
           </div>

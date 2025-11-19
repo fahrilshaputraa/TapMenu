@@ -162,7 +162,7 @@ export function Home() {
             </div>
 
             {/* Floating Badge */}
-            <div className="absolute bottom-10 -left-10 bg-white p-4 rounded-xl shadow-soft animate-bounce">
+            <div className="absolute bottom-10 -left-4 bg-white p-4 rounded-xl shadow-soft animate-bounce z-20">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
                   <i className="fa-solid fa-check"></i>

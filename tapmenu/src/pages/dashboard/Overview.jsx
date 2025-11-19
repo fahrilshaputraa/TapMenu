@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { Search, Filter, Eye, Check, X } from 'lucide-react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 
 export function DashboardOverview() {
