@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
+const DEFAULT_LOGO = 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png'
+const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80'
+
 const restaurantInfo = {
   name: 'Warung Bu Dewi',
   description: 'Warung makan dengan berbagai menu masakan Indonesia yang lezat dan terjangkau.',
   address: 'Jl. Merdeka No. 123, Jakarta Selatan',
   openTime: '08:00',
   closeTime: '22:00',
-  logo: null,
+  logo: DEFAULT_LOGO,
+  banner: DEFAULT_BANNER,
 }
 
 const categories = [
@@ -84,6 +88,8 @@ export function CustomerMenu() {
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
 
   const tableName = tableId ? `Meja ${tableId}` : 'Bawa Pulang'
+  const bannerImage = restaurantInfo.banner || DEFAULT_BANNER
+  const logoImage = restaurantInfo.logo || DEFAULT_LOGO
 
   const filteredItems = menuItems.filter(item => {
     if (selectedCategory !== 'all' && item.category !== selectedCategory) return false
@@ -116,7 +122,7 @@ export function CustomerMenu() {
       const itemKey = item.cartItemId || item.id
       if (itemKey === cartItemId) {
         const newQuantity = item.quantity + delta
-        return newQuantity > 0 ? { ...item, quantity: newQuantity } : item
+        return { ...item, quantity: newQuantity }
       }
       return item
     }).filter(item => item.quantity > 0))
@@ -144,120 +150,129 @@ export function CustomerMenu() {
   }
 
   return (
-    <div id="app-view" className="min-h-screen pb-32 fade-in bg-[#F7F5F2]">
-      {/* Header Sticky */}
-      <header className="sticky top-0 z-40 bg-[#F7F5F2]/95 backdrop-blur-md border-b border-gray-200/50">
-        <div className="px-4 py-3 flex justify-between items-center h-16">
-          {showSearch ? (
-            <div className="flex-1 flex items-center gap-3 animate-fade-in">
-              <div className="flex-1 relative">
-                <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                <input
-                  type="text"
-                  placeholder="Cari menu..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                  className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                />
+    <div id="app-view" className="min-h-screen pb-0 md:pb-32 fade-in bg-[#F7F5F2] flex flex-col">
+      <div className="flex-1 flex flex-col">
+        {/* Store Hero */}
+        <section>
+          <div className="border border-white/50 overflow-hidden relative">
+            <div className="relative h-44">
+              <img
+                src={bannerImage}
+                alt={`${restaurantInfo.name} banner`}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+              <div className="absolute top-4 left-4 px-3 py-1 text-[10px] font-bold tracking-[0.3em] uppercase text-white rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
+                Menu Digital
               </div>
-              <button
-                onClick={() => {
-                  setShowSearch(false)
-                  setSearchQuery('')
-                }}
-                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200"
-              >
-                <i className="fa-solid fa-xmark"></i>
-              </button>
             </div>
-          ) : (
-            <>
-              <div>
-                <h2 className="font-bold text-primary text-lg">{restaurantInfo.name}</h2>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Buka • {tableName}
+            <div className="px-6 pb-6">
+              <div className="-mt-14 flex items-center gap-4">
+                <div className="w-24 h-24 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-gray-100 shrink-0">
+                  <img
+                    src={logoImage}
+                    alt={`${restaurantInfo.name} logo`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-semibold">Live Preview</p>
+                  <h1 className="text-2xl font-extrabold text-dark leading-tight">{restaurantInfo.name}</h1>
+                  <p className="text-sm text-gray-500 mt-1">{restaurantInfo.description}</p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowSearch(true)}
-                className="w-9 h-9 bg-white rounded-full shadow-sm flex items-center justify-center text-dark hover:text-primary"
-              >
-                <i className="fa-solid fa-magnifying-glass"></i>
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Category Filter (Horizontal Scroll) */}
-        <div className="px-4 pb-3 overflow-x-auto no-scrollbar flex gap-3">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === category.id
-                ? 'bg-primary text-white font-bold shadow-md'
-                : 'bg-white text-gray-500 border border-gray-200 hover:border-primary hover:text-primary'
-                }`}
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      {/* Menu List Grid */}
-      <main className="px-4 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="menu-container">
-        {filteredItems.map((item) => {
-          const qty = getItemQuantity(item.id)
-          return (
-            <div key={item.id} className="bg-white p-4 rounded-2xl shadow-card flex gap-4 items-center md:items-start group">
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 relative">
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <div className="flex flex-wrap gap-3 mt-6 text-xs text-gray-600">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#F7F5F2] border border-gray-100">
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
+                  <span className="font-bold text-dark">Buka {restaurantInfo.openTime} - {restaurantInfo.closeTime}</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white border border-gray-100">
+                  <i className="fa-solid fa-location-dot text-primary"></i>
+                  <span>{restaurantInfo.address}</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white border border-gray-100">
+                  <i className="fa-solid fa-chair text-primary"></i>
+                  <span>{tableName}</span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-dark text-lg leading-tight mb-1 truncate">{item.name}</h3>
-                <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{item.description}</p>
-                <div className="flex justify-between items-end">
-                  <span className="font-bold text-accent text-lg">Rp {item.price.toLocaleString('id-ID')}</span>
+            </div>
+          </div>
+        </section>
 
-                  <div className="flex items-center">
-                    {qty === 0 ? (
-                      <button
-                        onClick={() => addToCart(item)}
-                        className="w-9 h-9 bg-secondary text-primary rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-colors shadow-sm"
-                      >
-                        <i className="fa-solid fa-plus"></i>
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-3 bg-[#F7F5F2] rounded-lg p-1 border border-gray-200">
+        {/* Header Sticky */}
+        <header className="sticky top-0 z-40 bg-[#F7F5F2]/95 backdrop-blur-md border-b border-gray-200/50">
+          {/* Category Filter (Horizontal Scroll) */}
+          <div className="px-4 pb-3 overflow-x-auto no-scrollbar flex gap-3 py-3">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
+                className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === category.id
+                  ? 'bg-primary text-white font-bold shadow-md'
+                  : 'bg-white text-gray-500 border border-gray-200 hover:border-primary hover:text-primary'
+                  }`}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        {/* Menu List Grid */}
+        <main className="px-4 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="menu-container">
+          {filteredItems.map((item) => {
+            const qty = getItemQuantity(item.id)
+            return (
+              <div key={item.id} className="bg-white p-4 rounded-2xl shadow-card flex gap-4 items-center md:items-start group">
+                <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 relative">
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-dark text-lg leading-tight mb-1 truncate">{item.name}</h3>
+                  <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{item.description}</p>
+                  <div className="flex justify-between items-end">
+                    <span className="font-bold text-accent text-lg">Rp {item.price.toLocaleString('id-ID')}</span>
+
+                    <div className="flex items-center">
+                      {qty === 0 ? (
                         <button
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="w-7 h-7 bg-white text-primary rounded flex items-center justify-center shadow-sm"
+                          onClick={() => addToCart(item)}
+                          className="w-9 h-9 bg-secondary text-primary rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-colors shadow-sm"
                         >
-                          <i className="fa-solid fa-minus text-xs"></i>
+                          <i className="fa-solid fa-plus"></i>
                         </button>
-                        <span className="font-bold text-dark text-sm w-2 text-center">{qty}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="w-7 h-7 bg-primary text-white rounded flex items-center justify-center shadow-sm"
-                        >
-                          <i className="fa-solid fa-plus text-xs"></i>
-                        </button>
-                      </div>
-                    )}
+                      ) : (
+                        <div className="flex items-center gap-3 bg-[#F7F5F2] rounded-lg p-1 border border-gray-200">
+                          <button
+                            onClick={() => updateQuantity(item.id, -1)}
+                            className="w-7 h-7 bg-white text-primary rounded flex items-center justify-center shadow-sm"
+                          >
+                            <i className="fa-solid fa-minus text-xs"></i>
+                          </button>
+                          <span className="font-bold text-dark text-sm w-2 text-center">{qty}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, 1)}
+                            className="w-7 h-7 bg-primary text-white rounded flex items-center justify-center shadow-sm"
+                          >
+                            <i className="fa-solid fa-plus text-xs"></i>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )
-        })}
-      </main>
+            )
+          })}
+        </main>
+      </div>
 
       {/* Floating Cart Bar */}
       {totalItems > 0 && (
-        <div id="cart-bar" className="fixed bottom-4 left-4 right-4 z-40 slide-up">
+        <div
+          id="cart-bar"
+          className="sticky bottom-0 mt-auto z-30 px-4 pb-4 pt-4 md:fixed md:bottom-0 md:left-0 md:w-full"
+        >
           <div
             className="bg-primary text-white rounded-2xl p-4 shadow-2xl flex justify-between items-center cursor-pointer"
             onClick={() => setShowCart(true)}
