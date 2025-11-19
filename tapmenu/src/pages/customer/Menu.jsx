@@ -153,47 +153,42 @@ export function CustomerMenu() {
     <div id="app-view" className="min-h-screen pb-0 md:pb-32 fade-in bg-[#F7F5F2] flex flex-col">
       <div className="flex-1 flex flex-col">
         {/* Store Hero */}
-        <section>
-          <div className="border border-white/50 overflow-hidden relative">
-            <div className="relative h-44">
-              <img
-                src={bannerImage}
-                alt={`${restaurantInfo.name} banner`}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
-              <div className="absolute top-4 left-4 px-3 py-1 text-[10px] font-bold tracking-[0.3em] uppercase text-white rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
-                Menu Digital
+        <section className="bg-white pb-4">
+          <div className="relative h-40 bg-gray-200">
+            <img
+              src={bannerImage}
+              alt={`${restaurantInfo.name} banner`}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/10"></div>
+
+            <div className="absolute left-4 -bottom-6 md:-bottom-10 w-16 h-16 md:w-24 md:h-24 bg-white rounded-full p-1 shadow-md z-10">
+              <div className="w-full h-full bg-gray-100 rounded-full overflow-hidden">
+                <img
+                  src={logoImage}
+                  alt={`${restaurantInfo.name} logo`}
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
-            <div className="px-6 pb-6">
-              <div className="-mt-14 flex items-center gap-4">
-                <div className="w-24 h-24 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-gray-100 shrink-0">
-                  <img
-                    src={logoImage}
-                    alt={`${restaurantInfo.name} logo`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-gray-400 font-semibold">Live Preview</p>
-                  <h1 className="text-2xl font-extrabold text-dark leading-tight">{restaurantInfo.name}</h1>
-                  <p className="text-sm text-gray-500 mt-1">{restaurantInfo.description}</p>
-                </div>
+          </div>
+
+          <div className="pt-8 md:pt-12 px-4">
+            <h1 className="text-xl md:text-2xl font-bold leading-tight text-dark">{restaurantInfo.name}</h1>
+            <p className="text-sm text-gray-600 mt-1">{restaurantInfo.description}</p>
+
+            <div className="flex flex-wrap gap-2 mt-3 text-xs text-gray-600">
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                <span className="font-bold text-dark">Buka {restaurantInfo.openTime} - {restaurantInfo.closeTime}</span>
               </div>
-              <div className="flex flex-wrap gap-3 mt-6 text-xs text-gray-600">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-[#F7F5F2] border border-gray-100">
-                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
-                  <span className="font-bold text-dark">Buka {restaurantInfo.openTime} - {restaurantInfo.closeTime}</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white border border-gray-100">
-                  <i className="fa-solid fa-location-dot text-primary"></i>
-                  <span>{restaurantInfo.address}</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-white border border-gray-100">
-                  <i className="fa-solid fa-chair text-primary"></i>
-                  <span>{tableName}</span>
-                </div>
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
+                <i className="fa-solid fa-location-dot text-primary text-xs"></i>
+                <span>{restaurantInfo.address}</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
+                <i className="fa-solid fa-chair text-primary text-xs"></i>
+                <span>{tableName}</span>
               </div>
             </div>
           </div>
