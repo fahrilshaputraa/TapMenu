@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { QrCode, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false)
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -13,6 +13,7 @@ export function Login() {
     e.preventDefault()
     // Handle login logic here
     console.log('Login:', formData)
+    alert('Ini hanya demo!')
   }
 
   const handleChange = (e) => {
@@ -23,154 +24,124 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative overflow-hidden bg-slate-50 dark:bg-slate-950">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/20 via-slate-50 to-slate-50 dark:from-emerald-950/40 dark:via-slate-950 dark:to-slate-950" />
-      <div className="absolute top-0 left-0 w-full h-full bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
+    <div id="login-view" className="fixed inset-0 z-[60] bg-[#F7F5F2] overflow-y-auto fade-in">
+      <div className="min-h-screen flex">
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-3 group">
-            <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/30 transition-all duration-300">
-              <QrCode className="w-7 h-7 text-white" />
+        {/* Left Side: Visual / Branding (Hidden on Mobile) */}
+        <div className="hidden lg:flex w-1/2 bg-primary relative items-center justify-center overflow-hidden">
+          {/* Abstract Circles */}
+          <div className="absolute top-0 left-0 w-full h-full opacity-10">
+            <div className="absolute top-10 right-10 w-64 h-64 rounded-full border border-white"></div>
+            <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full border border-white"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-white opacity-10 blur-3xl"></div>
+          </div>
+
+          <div className="relative z-10 max-w-md text-white px-12">
+            <div className="mb-8">
+              <i className="fa-solid fa-quote-left text-4xl text-accent mb-4"></i>
+              <h2 className="text-3xl font-bold leading-tight mb-4">"Sejak pakai TapMenu, omzet warung naik 30% karena pelayanan jadi lebih cepat."</h2>
+              <div className="flex items-center gap-4">
+                <img src="https://i.pravatar.cc/100?img=5" className="w-12 h-12 rounded-full border-2 border-accent" alt="Testimonial" />
+                <div>
+                  <p className="font-bold text-lg">Pak Budi</p>
+                  <p className="text-green-200 text-sm">Pemilik Bakso Mercon</p>
+                </div>
+              </div>
             </div>
-            <span className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
-              TapMenu
-            </span>
-          </Link>
+          </div>
         </div>
 
-        {/* Form Card */}
-        <div className="glass-card rounded-3xl p-8 sm:p-10 backdrop-blur-xl">
-          <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-              Selamat Datang Kembali
-            </h1>
-            <p className="text-slate-600 dark:text-slate-400">
-              Masuk untuk mengelola bisnis Anda
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                Email
-              </label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                </div>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="nama@email.com"
-                  required
-                  className="block w-full pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Password
-                </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 transition-colors"
-                >
-                  Lupa password?
-                </Link>
-              </div>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-                </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Masukkan password"
-                  required
-                  className="block w-full pl-10 pr-12 py-3 text-sm text-slate-900 dark:text-white bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-400"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" />
-                  ) : (
-                    <Eye className="w-5 h-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              className="group w-full py-3 px-4 flex items-center justify-center gap-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-lg shadow-emerald-500/20 transition-all hover:shadow-emerald-500/30 hover:-translate-y-0.5"
-            >
-              Masuk Sekarang
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase tracking-wider">
-              <span className="px-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm text-slate-500 rounded-full">
-                atau masuk dengan
-              </span>
-            </div>
-          </div>
-
-          {/* Social Login */}
-          <button
-            type="button"
-            className="w-full py-3 px-4 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-3 group"
-          >
-            <svg className="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
-            </svg>
-            Google
+        {/* Right Side: Login Form */}
+        <div className="w-full lg:w-1/2 flex flex-col justify-center p-8 md:p-16 lg:p-24 relative">
+          {/* Back Button */}
+          <button onClick={() => navigate('/')} className="absolute top-8 left-8 text-gray-400 hover:text-primary transition-colors flex items-center gap-2 font-semibold text-sm">
+            <i className="fa-solid fa-arrow-left"></i> Kembali
           </button>
 
-          {/* Sign up link */}
-          <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
-            Belum punya akun?{' '}
-            <Link to="/register" className="font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 hover:underline decoration-2 underline-offset-2 transition-all">
-              Daftar gratis sekarang
-            </Link>
-          </p>
+          <div className="max-w-md w-full mx-auto">
+            {/* Logo Mobile */}
+            <div className="flex items-center gap-2 mb-8 lg:hidden">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+                <i className="fa-solid fa-utensils text-xs"></i>
+              </div>
+              <span className="text-xl font-extrabold text-primary">TapMenu</span>
+            </div>
+
+            <div className="mb-10">
+              <h2 className="text-3xl font-bold text-primary mb-2">Selamat Datang!</h2>
+              <p className="text-gray-500">Masuk untuk mengelola warung digital Anda.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">Email / No. HP</label>
+                <div className="relative">
+                  <i className="fa-regular fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                  <input
+                    type="text"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
+                    placeholder="contoh@email.com"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-sm font-bold text-gray-700">Password</label>
+                  <a href="#" className="text-xs text-accent font-bold hover:underline">Lupa password?</a>
+                </div>
+                <div className="relative">
+                  <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="w-full pl-11 pr-12 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <i className={`fa-regular ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button type="submit" className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#143326] transition-all transform active:scale-[0.98]">
+                Masuk Sekarang
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-[#F7F5F2] text-gray-500">atau masuk dengan</span>
+              </div>
+            </div>
+
+            {/* Google Button */}
+            <button className="w-full bg-white border border-gray-200 text-dark font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-3">
+              <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
+              Google Account
+            </button>
+
+            <p className="text-center mt-8 text-sm text-gray-600">
+              Belum punya akun toko?
+              <Link to="/register" className="font-bold text-accent hover:underline ml-1">Daftar Gratis</Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

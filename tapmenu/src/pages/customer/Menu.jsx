@@ -1,24 +1,8 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import {
-  Search,
-  Plus,
-  Minus,
-  ShoppingCart,
-  X,
-  ChevronRight,
-  ChevronLeft,
-  Store,
-  Clock,
-  MapPin,
-  Check,
-  Star,
-  Ticket,
-  Heart
-} from 'lucide-react'
 
 const restaurantInfo = {
-  name: 'Warung Pak Joko',
+  name: 'Warung Bu Dewi',
   description: 'Warung makan dengan berbagai menu masakan Indonesia yang lezat dan terjangkau.',
   address: 'Jl. Merdeka No. 123, Jakarta Selatan',
   openTime: '08:00',
@@ -28,25 +12,10 @@ const restaurantInfo = {
 
 const categories = [
   { id: 'all', name: 'Semua' },
-  { id: 'food', name: 'Makanan Utama' },
+  { id: 'food', name: 'Makanan Berat' },
   { id: 'drink', name: 'Minuman' },
-  { id: 'snack', name: 'Camilan' },
+  { id: 'snack', name: 'Cemilan' },
   { id: 'promo', name: 'Promo' },
-]
-
-const promos = [
-  {
-    id: 1,
-    title: 'Diskon Spesial!',
-    description: 'Diskon 50% untuk semua menu ayam',
-    image: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?w=800&auto=format&fit=crop&q=60',
-  },
-  {
-    id: 2,
-    title: 'Promo Minuman Gratis',
-    description: 'Beli 1 makanan utama, gratis 1 minuman',
-    image: 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=800&auto=format&fit=crop&q=60',
-  },
 ]
 
 const addOns = [
@@ -79,32 +48,12 @@ export function CustomerMenu() {
   const { tableId } = useParams()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
   const [cart, setCart] = useState([])
   const [showCart, setShowCart] = useState(false)
-  const [showItemDetail, setShowItemDetail] = useState(null)
-  const [detailQuantity, setDetailQuantity] = useState(1)
-  const [selectedAddOns, setSelectedAddOns] = useState([])
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
   const [orderNumber, setOrderNumber] = useState('')
-
-  const toggleAddOn = (addOnId) => {
-    setSelectedAddOns(prev =>
-      prev.includes(addOnId)
-        ? prev.filter(id => id !== addOnId)
-        : [...prev, addOnId]
-    )
-  }
-
-  const getAddOnDetails = (addOnIds) => {
-    return addOnIds.map(id => addOns.find(a => a.id === id)).filter(Boolean)
-  }
-
-  const calculateAddOnsPrice = (addOnIds) => {
-    return addOnIds.reduce((sum, id) => {
-      const addOn = addOns.find(a => a.id === id)
-      return sum + (addOn ? addOn.price : 0)
-    }, 0)
-  }
+  const [paymentMethod, setPaymentMethod] = useState('cash')
 
   const tableName = tableId ? `Meja ${tableId}` : 'Bawa Pulang'
 
@@ -115,18 +64,18 @@ export function CustomerMenu() {
     return true
   })
 
-  const addToCart = (item, quantity = 1) => {
+  const addToCart = (item) => {
     if (!item.stock) return
 
     const existingItem = cart.find(cartItem => cartItem.id === item.id)
     if (existingItem) {
       setCart(cart.map(cartItem =>
         cartItem.id === item.id
-          ? { ...cartItem, quantity: cartItem.quantity + quantity }
+          ? { ...cartItem, quantity: cartItem.quantity + 1 }
           : cartItem
       ))
     } else {
-      setCart([...cart, { ...item, quantity, note: '' }])
+      setCart([...cart, { ...item, quantity: 1 }])
     }
   }
 
@@ -142,11 +91,8 @@ export function CustomerMenu() {
   }
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
-  const subtotal = cart.reduce((sum, item) => {
-    const addOnsPrice = item.selectedAddOns ? calculateAddOnsPrice(item.selectedAddOns) : 0
-    return sum + ((item.price + addOnsPrice) * item.quantity)
-  }, 0)
-  const tax = Math.round(subtotal * 0.11)
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const tax = Math.round(subtotal * 0.1) // 10% tax as per design
   const total = subtotal + tax
 
   const handleOrder = () => {
@@ -161,512 +107,264 @@ export function CustomerMenu() {
   const resetOrder = () => {
     setCart([])
     setShowOrderSuccess(false)
-  }
-
-  const handleAddFromDetail = () => {
-    if (showItemDetail) {
-      const itemWithAddOns = {
-        ...showItemDetail,
-        selectedAddOns: [...selectedAddOns],
-        cartItemId: Date.now() // Unique ID for cart items with different add-ons
-      }
-      setCart([...cart, { ...itemWithAddOns, quantity: detailQuantity, note: '' }])
-      setShowItemDetail(null)
-      setDetailQuantity(1)
-      setSelectedAddOns([])
-    }
-  }
-
-  const getItemQuantityInCart = (itemId) => {
-    const item = cart.find(cartItem => cartItem.id === itemId)
-    return item ? item.quantity : 0
+    setPaymentMethod('cash')
+    window.location.reload()
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <button className="p-2 -ml-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-            <Search className="w-5 h-5" />
-          </button>
-          <div className="text-center">
-            <h1 className="text-lg font-bold text-zinc-900 dark:text-white">{restaurantInfo.name}</h1>
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{tableName}</p>
-          </div>
-          <button
-            onClick={() => setShowCart(true)}
-            className="relative p-2 -mr-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            {totalItems > 0 && (
-              <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-emerald-500 rounded-full">
-                {totalItems}
-              </span>
-            )}
-          </button>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Headline */}
-        <h2 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-white leading-tight pt-6 pb-4">
-          Mau makan apa hari ini?
-        </h2>
-
-        {/* Promo Carousel */}
-        <div className="flex overflow-x-auto gap-4 pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 [-ms-scrollbar-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {promos.map((promo) => (
-            <div key={promo.id} className="flex-shrink-0 w-72 sm:w-80">
-              <div
-                className="w-full aspect-video bg-cover bg-center rounded-xl mb-2"
-                style={{ backgroundImage: `url("${promo.image}")` }}
-              />
-              <p className="text-sm font-medium text-zinc-900 dark:text-white">{promo.title}</p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">{promo.description}</p>
+    <div id="app-view" className="min-h-screen pb-32 fade-in bg-[#F7F5F2]">
+      {/* Header Sticky */}
+      <header className="sticky top-0 z-40 bg-[#F7F5F2]/95 backdrop-blur-md border-b border-gray-200/50">
+        <div className="px-4 py-3 flex justify-between items-center h-16">
+          {showSearch ? (
+            <div className="flex-1 flex items-center gap-3 animate-fade-in">
+              <div className="flex-1 relative">
+                <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input
+                  type="text"
+                  placeholder="Cari menu..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                  className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              <button
+                onClick={() => {
+                  setShowSearch(false)
+                  setSearchQuery('')
+                }}
+                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
             </div>
-          ))}
+          ) : (
+            <>
+              <div>
+                <h2 className="font-bold text-primary text-lg">{restaurantInfo.name}</h2>
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Buka • {tableName}
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSearch(true)}
+                className="w-9 h-9 bg-white rounded-full shadow-sm flex items-center justify-center text-dark hover:text-primary"
+              >
+                <i className="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </>
+          )}
         </div>
 
-        {/* Category Chips */}
-        <div className="flex gap-2 pb-6 overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 [-ms-scrollbar-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Category Filter (Horizontal Scroll) */}
+        <div className="px-4 pb-3 overflow-x-auto no-scrollbar flex gap-3">
           {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => setSelectedCategory(category.id)}
-              className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                selectedCategory === category.id
-                  ? 'bg-emerald-500 text-white'
-                  : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500'
-              }`}
+              className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === category.id
+                ? 'bg-primary text-white font-bold shadow-md'
+                : 'bg-white text-gray-500 border border-gray-200 hover:border-primary hover:text-primary'
+                }`}
             >
               {category.name}
             </button>
           ))}
         </div>
+      </header>
 
-        {/* Product Grid - Responsive */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-32">
-          {filteredItems.map((item) => {
-            const quantityInCart = getItemQuantityInCart(item.id)
-
-            return (
-              <div
-                key={item.id}
-                className={`bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden ${
-                  !item.stock ? 'opacity-50' : 'hover:border-emerald-500/50'
-                } transition-colors`}
-              >
-                {/* Image */}
-                <button
-                  onClick={() => item.stock && setShowItemDetail(item)}
-                  disabled={!item.stock}
-                  className="w-full"
-                >
-                  <div
-                    className="w-full aspect-square bg-cover bg-center relative"
-                    style={{ backgroundImage: `url("${item.image}")` }}
-                  >
-                    {item.badge && (
-                      <div className={`absolute top-2 left-2 px-2 py-1 text-xs font-bold text-white rounded-full ${
-                        item.badge === 'Terlaris' ? 'bg-emerald-500' :
-                        item.badge === 'Baru' ? 'bg-blue-500' :
-                        item.badge === 'Promo' ? 'bg-red-500' : 'bg-emerald-500'
-                      }`}>
-                        {item.badge}
-                      </div>
-                    )}
-                    {!item.stock && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">Habis</span>
-                      </div>
-                    )}
-                  </div>
-                </button>
-
-                {/* Content */}
-                <div className="p-3">
-                  <button
-                    onClick={() => item.stock && setShowItemDetail(item)}
-                    disabled={!item.stock}
-                    className="w-full text-left"
-                  >
-                    <p className="text-sm font-medium text-zinc-900 dark:text-white line-clamp-1 mb-1">
-                      {item.name}
-                    </p>
-                    <div className="flex items-center gap-1 mb-2">
-                      {item.originalPrice && (
-                        <p className="text-xs text-zinc-400 line-through">
-                          Rp {item.originalPrice.toLocaleString('id-ID')}
-                        </p>
-                      )}
-                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                        Rp {item.price.toLocaleString('id-ID')}
-                      </p>
-                    </div>
-                  </button>
-
-                  {/* Add to cart button */}
-                  {item.stock && (
-                    <div className="flex items-center justify-between">
-                      {quantityInCart > 0 ? (
-                        <div className="flex items-center gap-2 w-full">
-                          <button
-                            onClick={() => updateQuantity(item.id, -1)}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <span className="flex-1 text-center text-sm font-medium text-zinc-900 dark:text-white">
-                            {quantityInCart}
-                          </span>
-                          <button
-                            onClick={() => addToCart(item)}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500 text-white hover:bg-emerald-600"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => addToCart(item)}
-                          className="flex items-center justify-center gap-1 w-full py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Tambah
-                        </button>
-                      )}
-                    </div>
-                  )}
+      {/* Menu List Grid */}
+      <main className="px-4 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="menu-container">
+        {filteredItems.map((item) => (
+          <div key={item.id} className="bg-white rounded-2xl p-4 shadow-card flex gap-4">
+            <div className="w-24 h-24 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden relative">
+              <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+              {!item.stock && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">Habis</span>
                 </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Cart Button - Fixed */}
-      {totalItems > 0 && !showCart && !showItemDetail && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm border-t border-zinc-200 dark:border-zinc-800">
-          <div className="max-w-7xl mx-auto">
-            <button
-              onClick={() => setShowCart(true)}
-              className="w-full flex items-center justify-between px-6 py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-lg transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <ShoppingCart className="w-5 h-5" />
-                <span className="font-medium">{totalItems} item</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold">Rp {total.toLocaleString('id-ID')}</span>
-                <ChevronRight className="w-5 h-5" />
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Item Detail Modal - Responsive */}
-      {showItemDetail && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            {/* Detail Header */}
-            <div className="sticky top-0 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Detail Produk</h2>
-              <button
-                onClick={() => {
-                  setShowItemDetail(null)
-                  setDetailQuantity(1)
-                }}
-                className="p-1 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              )}
             </div>
-
-            {/* Detail Content */}
-            <div className="p-4">
-              {/* Image */}
-              <div
-                className="w-full aspect-video bg-cover bg-center rounded-xl mb-4"
-                style={{ backgroundImage: `url("${showItemDetail.image}")` }}
-              />
-
-              {/* Title */}
-              <h1 className="text-xl font-bold text-zinc-900 dark:text-white mb-2">
-                {showItemDetail.name}
-              </h1>
-
-              {/* Price & Rating */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  {showItemDetail.originalPrice && (
-                    <p className="text-sm text-zinc-400 line-through">
-                      Rp {showItemDetail.originalPrice.toLocaleString('id-ID')}
-                    </p>
-                  )}
-                  <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                    Rp {showItemDetail.price.toLocaleString('id-ID')}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1 text-sm text-zinc-500 dark:text-zinc-400">
-                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  <span className="font-medium text-zinc-900 dark:text-white">{showItemDetail.rating}</span>
-                  <span>({showItemDetail.reviews})</span>
-                </div>
+            <div className="flex-1 flex flex-col justify-between">
+              <div>
+                <h3 className="font-bold text-dark line-clamp-2">{item.name}</h3>
+                <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
               </div>
-
-              {/* Description */}
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-                {showItemDetail.description}
-              </p>
-
-              {/* Add-ons */}
-              {showItemDetail.addOns && showItemDetail.addOns.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-zinc-900 dark:text-white mb-3">Tambahan</h3>
-                  <div className="space-y-2">
-                    {showItemDetail.addOns.map(addOnId => {
-                      const addOn = addOns.find(a => a.id === addOnId)
-                      if (!addOn) return null
-                      const isSelected = selectedAddOns.includes(addOnId)
-                      return (
-                        <button
-                          key={addOnId}
-                          onClick={() => toggleAddOn(addOnId)}
-                          className={`flex items-center justify-between w-full p-3 rounded-lg border transition-colors ${
-                            isSelected
-                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                              : 'border-zinc-200 dark:border-zinc-700 hover:border-emerald-500'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              isSelected
-                                ? 'border-emerald-500 bg-emerald-500'
-                                : 'border-zinc-300 dark:border-zinc-600'
-                            }`}>
-                              {isSelected && <Check className="w-3 h-3 text-white" />}
-                            </div>
-                            <span className="text-sm text-zinc-900 dark:text-white">{addOn.name}</span>
-                          </div>
-                          <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                            +Rp {addOn.price.toLocaleString('id-ID')}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Total Price */}
-              {selectedAddOns.length > 0 && (
-                <div className="mb-4 p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-zinc-500 dark:text-zinc-400">Harga dasar</span>
-                    <span className="text-zinc-900 dark:text-white">Rp {showItemDetail.price.toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-zinc-500 dark:text-zinc-400">Tambahan</span>
-                    <span className="text-zinc-900 dark:text-white">Rp {calculateAddOnsPrice(selectedAddOns).toLocaleString('id-ID')}</span>
-                  </div>
-                  <div className="border-t border-zinc-200 dark:border-zinc-700 pt-1 mt-1">
-                    <div className="flex justify-between">
-                      <span className="font-medium text-zinc-900 dark:text-white">Total per item</span>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                        Rp {(showItemDetail.price + calculateAddOnsPrice(selectedAddOns)).toLocaleString('id-ID')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Quantity & Add */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-3 bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+              <div className="flex justify-between items-end mt-3">
+                <span className="font-bold text-primary">Rp {item.price.toLocaleString('id-ID')}</span>
+                {item.stock ? (
                   <button
-                    onClick={() => setDetailQuantity(Math.max(1, detailQuantity - 1))}
-                    className="flex items-center justify-center w-10 h-10 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    onClick={() => addToCart(item)}
+                    className="w-8 h-8 bg-secondary text-primary rounded-full flex items-center justify-center hover:bg-primary hover:text-white transition-colors"
                   >
-                    <Minus className="w-4 h-4" />
+                    <i className="fa-solid fa-plus"></i>
                   </button>
-                  <span className="text-lg font-bold text-zinc-900 dark:text-white w-8 text-center">
-                    {detailQuantity}
-                  </span>
-                  <button
-                    onClick={() => setDetailQuantity(detailQuantity + 1)}
-                    className="flex items-center justify-center w-10 h-10 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <button
-                  onClick={handleAddFromDetail}
-                  className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
-                >
-                  Tambah - Rp {((showItemDetail.price + calculateAddOnsPrice(selectedAddOns)) * detailQuantity).toLocaleString('id-ID')}
-                </button>
+                ) : (
+                  <span className="text-xs text-red-500 font-medium">Stok Habis</span>
+                )}
               </div>
+            </div>
+          </div>
+        ))}
+      </main>
+
+      {/* Floating Cart Bar */}
+      {totalItems > 0 && (
+        <div id="cart-bar" className="fixed bottom-4 left-4 right-4 z-40 slide-up">
+          <div
+            className="bg-primary text-white rounded-2xl p-4 shadow-2xl flex justify-between items-center cursor-pointer"
+            onClick={() => setShowCart(true)}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center font-bold text-lg" id="total-items-badge">
+                {totalItems}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-green-100">Total Pembayaran</span>
+                <span className="font-bold text-lg" id="total-price-bar">Rp {total.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 font-bold text-sm bg-accent px-4 py-2 rounded-xl hover:bg-[#d06a50] transition-colors">
+              Lihat Pesanan <i className="fa-solid fa-chevron-right"></i>
             </div>
           </div>
         </div>
       )}
 
-      {/* Cart Modal - Responsive */}
+      {/* Cart Modal */}
       {showCart && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-zinc-900 rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col">
-            {/* Cart Header */}
-            <div className="flex-shrink-0 border-b border-zinc-200 dark:border-zinc-800 px-4 py-3 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-white">Keranjang Anda</h2>
+        <div id="cart-modal" className="fixed inset-0 z-50">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowCart(false)}
+          ></div>
+
+          {/* Bottom Sheet */}
+          <div className="absolute bottom-0 w-full bg-[#F7F5F2] rounded-t-[2rem] shadow-2xl h-[85vh] flex flex-col slide-up">
+            {/* Handle bar */}
+            <div className="w-full flex justify-center pt-4 pb-2" onClick={() => setShowCart(false)}>
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+            </div>
+
+            {/* Modal Header */}
+            <div className="px-6 pb-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-primary">Pesanan Anda</h2>
               <button
                 onClick={() => setShowCart(false)}
-                className="p-1 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"
+                className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200"
               >
-                <X className="w-5 h-5" />
+                <i className="fa-solid fa-xmark"></i>
               </button>
             </div>
 
-            {/* Cart Content */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {cart.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
-                  <ShoppingCart className="w-12 h-12 mb-3" />
-                  <p className="font-medium">Keranjang kosong</p>
-                  <p className="text-sm">Tambahkan menu untuk memulai</p>
+            {/* Cart Items (Scrollable) */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scroll" id="cart-items-container">
+              {cart.map((item) => (
+                <div key={item.id} className="flex gap-4">
+                  <div className="w-16 h-16 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-dark line-clamp-1">{item.name}</h4>
+                    <p className="text-primary font-bold text-sm">Rp {item.price.toLocaleString('id-ID')}</p>
+                  </div>
+                  <div className="flex items-center gap-3 h-8">
+                    <button
+                      onClick={() => updateQuantity(item.id, -1)}
+                      className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50"
+                    >
+                      <i className="fa-solid fa-minus text-xs"></i>
+                    </button>
+                    <span className="font-bold text-dark w-4 text-center">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id, 1)}
+                      className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-[#143326]"
+                    >
+                      <i className="fa-solid fa-plus text-xs"></i>
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  {/* Cart Items */}
-                  <div className="space-y-3 mb-4">
-                    {cart.map((item) => {
-                      const itemKey = item.cartItemId || item.id
-                      const addOnsPrice = item.selectedAddOns ? calculateAddOnsPrice(item.selectedAddOns) : 0
-                      const itemTotal = item.price + addOnsPrice
-
-                      return (
-                        <div key={itemKey} className="p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="w-14 h-14 bg-cover bg-center rounded-lg flex-shrink-0"
-                              style={{ backgroundImage: `url("${item.image}")` }}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-zinc-900 dark:text-white line-clamp-1">
-                                {item.name}
-                              </p>
-                              {item.selectedAddOns && item.selectedAddOns.length > 0 && (
-                                <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1">
-                                  + {getAddOnDetails(item.selectedAddOns).map(a => a.name).join(', ')}
-                                </p>
-                              )}
-                              <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
-                                Rp {itemTotal.toLocaleString('id-ID')}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <button
-                                onClick={() => updateQuantity(itemKey, -1)}
-                                className="flex items-center justify-center w-7 h-7 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
-                              >
-                                <Minus className="w-3 h-3" />
-                              </button>
-                              <span className="w-6 text-center text-sm font-medium text-zinc-900 dark:text-white">
-                                {item.quantity}
-                              </span>
-                              <button
-                                onClick={() => updateQuantity(itemKey, 1)}
-                                className="flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500 text-white"
-                              >
-                                <Plus className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Voucher */}
-                  <button className="flex items-center justify-between w-full p-3 bg-zinc-50 dark:bg-zinc-800 rounded-lg mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-                        <Ticket className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <span className="text-sm font-medium text-zinc-900 dark:text-white">Gunakan Voucher</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-
-                  {/* Cost Details */}
-                  <div className="bg-zinc-50 dark:bg-zinc-800 rounded-lg p-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-500 dark:text-zinc-400">Subtotal</span>
-                      <span className="text-zinc-900 dark:text-white">Rp {subtotal.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-zinc-500 dark:text-zinc-400">PPN (11%)</span>
-                      <span className="text-zinc-900 dark:text-white">Rp {tax.toLocaleString('id-ID')}</span>
-                    </div>
-                    <div className="border-t border-dashed border-zinc-200 dark:border-zinc-700 pt-2 mt-2">
-                      <div className="flex justify-between">
-                        <span className="font-bold text-zinc-900 dark:text-white">Total</span>
-                        <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                          Rp {total.toLocaleString('id-ID')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+              ))}
             </div>
 
-            {/* Cart Footer */}
-            {cart.length > 0 && (
-              <div className="flex-shrink-0 p-4 border-t border-zinc-200 dark:border-zinc-800">
-                <button
-                  onClick={handleOrder}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition-colors"
-                >
-                  Lanjutkan ke Pembayaran
-                </button>
+            {/* Bill Details & Checkout */}
+            <div className="bg-white p-6 rounded-t-[2rem] shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+              {/* Payment Method Selection */}
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-dark mb-3">Metode Pembayaran</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'cash'
+                        ? 'border-primary bg-secondary text-primary font-bold'
+                        : 'border-gray-200 text-gray-500 hover:border-primary'
+                      }`}
+                  >
+                    <i className="fa-solid fa-money-bill-wave"></i> Tunai
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('qris')}
+                    className={`p-3 rounded-xl border flex items-center justify-center gap-2 transition-all ${paymentMethod === 'qris'
+                        ? 'border-primary bg-secondary text-primary font-bold'
+                        : 'border-gray-200 text-gray-500 hover:border-primary'
+                      }`}
+                  >
+                    <i className="fa-solid fa-qrcode"></i> QRIS
+                  </button>
+                </div>
               </div>
-            )}
+
+              <div className="space-y-3 mb-6 text-sm">
+                <div className="flex justify-between text-gray-500">
+                  <span>Subtotal</span>
+                  <span className="font-bold text-dark" id="bill-subtotal">Rp {subtotal.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-gray-500">
+                  <span>Pajak & Layanan (10%)</span>
+                  <span className="font-bold text-dark" id="bill-tax">Rp {tax.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="border-t border-dashed border-gray-300 my-2"></div>
+                <div className="flex justify-between text-lg">
+                  <span className="font-bold text-primary">Total</span>
+                  <span className="font-extrabold text-accent" id="bill-total">Rp {total.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleOrder}
+                className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-[#143326] transition-all flex justify-center items-center gap-2"
+              >
+                <i className="fa-solid fa-paper-plane"></i>
+                {paymentMethod === 'qris' ? 'Bayar & Pesan' : 'Pesan Sekarang'}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Order Success Modal */}
+      {/* Success Overlay */}
       {showOrderSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-xl shadow-xl text-center">
-            <div className="p-6">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
-                <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <h3 className="text-xl font-bold text-zinc-900 dark:text-white mb-1">
-                Pesanan Dikirim!
-              </h3>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">
-                Nomor pesanan Anda
-              </p>
-              <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mb-4">
-                {orderNumber}
-              </p>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-                Pesanan Anda sedang diproses. Silakan tunggu di {tableName}.
-              </p>
-
-              <button
-                onClick={resetOrder}
-                className="w-full py-3 text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors"
-              >
-                Pesan Lagi
-              </button>
-            </div>
+        <div id="success-view" className="fixed inset-0 z-[60] bg-primary flex flex-col items-center justify-center p-6 text-center text-white fade-in">
+          <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
+            <i className="fa-solid fa-check text-4xl text-white"></i>
           </div>
+          <h2 className="text-3xl font-bold mb-2">Pesanan Diterima!</h2>
+          <p className="text-green-100 mb-8 max-w-xs mx-auto">Mohon tunggu sebentar, pesanan Anda sedang disiapkan oleh dapur.</p>
+
+          <div className="bg-white/10 backdrop-blur-md p-6 rounded-2xl w-full max-w-xs border border-white/10">
+            <p className="text-xs text-green-200 uppercase font-bold mb-1">Estimasi Waktu</p>
+            <p className="text-2xl font-bold">15 - 20 Menit</p>
+          </div>
+
+          <button
+            onClick={resetOrder}
+            className="mt-10 px-8 py-3 border border-white/30 rounded-xl text-sm font-bold hover:bg-white/10 transition-colors"
+          >
+            Kembali ke Menu
+          </button>
         </div>
       )}
     </div>

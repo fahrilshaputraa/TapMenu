@@ -1,158 +1,186 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
-import {
-  QrCode,
-  LayoutDashboard,
-  UtensilsCrossed,
-  ShoppingCart,
-  Grid3X3,
-  BarChart3,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Bell,
-  User,
-  Calculator
-} from 'lucide-react'
-import { cn } from '../lib/utils'
-
-const sidebarLinks = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Kasir', href: '/dashboard/cashier', icon: Calculator },
-  { name: 'Pesanan', href: '/dashboard/orders', icon: ShoppingCart },
-  { name: 'Menu', href: '/dashboard/menu', icon: UtensilsCrossed },
-  { name: 'Meja & QR', href: '/dashboard/tables', icon: Grid3X3 },
-  { name: 'Laporan', href: '/dashboard/reports', icon: BarChart3 },
-  { name: 'Pengaturan', href: '/dashboard/settings', icon: Settings },
-]
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 export function DashboardLayout({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const isActive = (path) => {
+    if (path === '/dashboard' && location.pathname === '/dashboard') return true
+    if (path !== '/dashboard' && location.pathname.startsWith(path)) return true
+    return false
+  }
+
+  const navLinkClass = (path) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive(path)
+      ? 'bg-secondary/50 text-primary font-bold'
+      : 'text-gray-500 font-medium hover:bg-gray-50 hover:text-dark'
+    }`
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-500/10 via-slate-50 to-slate-50 dark:from-emerald-950/30 dark:via-slate-950 dark:to-slate-950">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="fixed inset-0 bg-[#F7F5F2] flex fade-in">
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed top-0 left-0 z-50 h-full w-72 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-r border-slate-200/60 dark:border-slate-800/60 transform transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-2xl lg:shadow-none",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        {/* Logo */}
-        <div className="flex items-center justify-between h-20 px-6 border-b border-slate-200/60 dark:border-slate-800/60">
-          <Link to="/dashboard" className="flex items-center gap-3 group">
-            <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:shadow-emerald-500/30 transition-all duration-300">
-              <QrCode className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">
-              TapMenu
-            </span>
-          </Link>
+      {/* SIDEBAR (Desktop) */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex-col transition-transform duration-300 md:translate-x-0 md:static md:flex ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        {/* Brand */}
+        <div className="p-6 flex items-center gap-3 border-b border-gray-100">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-sm">
+            <i className="fa-solid fa-utensils text-xs"></i>
+          </div>
+          <span className="text-lg font-extrabold text-primary tracking-tight">TapMenu</span>
+
+          {/* Mobile Close Button */}
           <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="md:hidden ml-auto text-gray-400 hover:text-dark"
           >
-            <X className="w-5 h-5" />
+            <i className="fa-solid fa-xmark"></i>
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-1.5">
-          <div className="px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Menu Utama
-          </div>
-          {sidebarLinks.map((link) => {
-            const isActive = location.pathname === link.href
-            return (
-              <Link
-                key={link.name}
-                to={link.href}
-                onClick={() => setSidebarOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 group relative overflow-hidden",
-                  isActive
-                    ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                )}
-              >
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-emerald-500 rounded-r-full" />
-                )}
-                <link.icon className={cn(
-                  "w-5 h-5 transition-colors",
-                  isActive ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300"
-                )} />
-                {link.name}
-              </Link>
-            )
-          })}
-        </nav>
+        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Utama</div>
 
-        {/* Logout */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200/60 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-sm">
-          <button className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group">
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-colors">
-              <LogOut className="w-4 h-4" />
+          <Link to="/dashboard" className={navLinkClass('/dashboard')}>
+            <i className="fa-solid fa-grid-2 w-5"></i> Dashboard
+          </Link>
+          <Link to="/dashboard/orders" className={navLinkClass('/dashboard/orders')}>
+            <i className="fa-solid fa-receipt w-5"></i> Pesanan
+            <span className="ml-auto bg-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-full">3</span>
+          </Link>
+          <Link to="/dashboard/menu" className={navLinkClass('/dashboard/menu')}>
+            <i className="fa-solid fa-book-open w-5"></i> Daftar Menu
+          </Link>
+          <Link to="/dashboard/tables" className={navLinkClass('/dashboard/tables')}>
+            <i className="fa-solid fa-chair w-5"></i> Meja
+          </Link>
+
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3 px-2">Keuangan</div>
+
+          <Link to="/dashboard/reports" className={navLinkClass('/dashboard/reports')}>
+            <i className="fa-solid fa-chart-simple w-5"></i> Laporan
+          </Link>
+          <Link to="/dashboard/cashier" className={navLinkClass('/dashboard/cashier')}>
+            <i className="fa-solid fa-wallet w-5"></i> Kasir
+          </Link>
+        </div>
+
+        {/* User Profile Bottom */}
+        <div className="p-4 border-t border-gray-100 relative">
+          <div
+            onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+            className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+          >
+            <img src="https://i.pravatar.cc/100?img=5" className="w-9 h-9 rounded-full border border-gray-200" alt="User" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-dark truncate">Pak Budi</p>
+              <p className="text-xs text-gray-500 truncate">Owner</p>
             </div>
-            <span>Keluar Aplikasi</span>
-          </button>
+            <i className={`fa-solid fa-chevron-${isProfileDropdownOpen ? 'down' : 'right'} text-xs text-gray-400 transition-transform`}></i>
+          </div>
+
+          {/* Profile Dropdown */}
+          {isProfileDropdownOpen && (
+            <div className="absolute bottom-full left-4 right-4 mb-2 bg-white rounded-xl shadow-lg border border-gray-100 py-2 slide-up">
+              <Link
+                to="/dashboard/settings/profile"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-dark hover:bg-gray-50 transition-colors"
+                onClick={() => setIsProfileDropdownOpen(false)}
+              >
+                <i className="fa-solid fa-user w-4 text-gray-400"></i>
+                Profil Saya
+              </Link>
+              <Link
+                to="/dashboard/settings"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-dark hover:bg-gray-50 transition-colors"
+                onClick={() => setIsProfileDropdownOpen(false)}
+              >
+                <i className="fa-solid fa-gear w-4 text-gray-400"></i>
+                Pengaturan
+              </Link>
+              <Link
+                to="/dashboard/settings/store"
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-dark hover:bg-gray-50 transition-colors"
+                onClick={() => setIsProfileDropdownOpen(false)}
+              >
+                <i className="fa-solid fa-store w-4 text-gray-400"></i>
+                Pengaturan Toko
+              </Link>
+              <div className="border-t border-gray-100 my-2"></div>
+              <button
+                onClick={() => {
+                  setIsProfileDropdownOpen(false)
+                  navigate('/')
+                }}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors w-full"
+              >
+                <i className="fa-solid fa-right-from-bracket w-4"></i>
+                Keluar
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="lg:ml-72 min-h-screen flex flex-col">
-        {/* Header */}
-        <header className="sticky top-0 z-30 h-20 glass border-b border-slate-200/60 dark:border-slate-800/60">
-          <div className="flex items-center justify-between h-full px-6 max-w-7xl mx-auto w-full">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 hidden sm:block">
-                {sidebarLinks.find(l => l.href === location.pathname)?.name || 'Dashboard'}
-              </h1>
+      {/* Overlay for mobile */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 h-screen overflow-y-auto relative w-full">
+
+        {/* Header Mobile & Desktop */}
+        <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          {/* Mobile Toggle */}
+          <div className="flex items-center gap-4 md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="text-primary text-xl"
+            >
+              <i className="fa-solid fa-bars"></i>
+            </button>
+            <span className="font-bold text-primary">Dashboard</span>
+          </div>
+
+          {/* Greeting (Desktop) */}
+          <div className="hidden md:block">
+            <h2 className="text-xl font-bold text-dark">Halo, Warung Bu Dewi 👋</h2>
+            <p className="text-xs text-gray-500">Rabu, 25 Oktober 2023</p>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-4">
+            {/* Search */}
+            <div className="hidden md:flex items-center bg-[#F7F5F2] rounded-full px-4 py-2 border border-transparent focus-within:border-primary focus-within:bg-white transition-all">
+              <i className="fa-solid fa-search text-gray-400 text-sm"></i>
+              <input type="text" placeholder="Cari pesanan..." className="bg-transparent border-none focus:ring-0 text-sm ml-2 w-48 outline-none text-dark placeholder-gray-400" />
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Notifications */}
-              <button className="relative p-2.5 rounded-xl text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-white dark:ring-slate-900 animate-pulse" />
-              </button>
+            {/* Notification */}
+            <button className="relative w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-primary hover:border-primary transition-colors flex items-center justify-center">
+              <i className="fa-regular fa-bell"></i>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-accent rounded-full border border-white"></span>
+            </button>
 
-              {/* Profile */}
-              <Link to="/dashboard/settings" className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
-                <div className="hidden sm:block text-right px-2">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Warung Pak Joko</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Administrator</p>
-                </div>
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900 dark:to-emerald-800 text-emerald-700 dark:text-emerald-300 border-2 border-white dark:border-slate-800 shadow-sm">
-                  <User className="w-5 h-5" />
-                </div>
-              </Link>
+            {/* Store Status Toggle */}
+            <div className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-full border border-secondary cursor-pointer">
+              <div className="w-2 h-2 bg-green-500 rounded-full live-indicator"></div>
+              <span className="text-xs font-bold text-primary">Buka</span>
+              <i className="fa-solid fa-chevron-down text-[10px] text-primary ml-1"></i>
             </div>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }
-

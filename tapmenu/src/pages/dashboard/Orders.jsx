@@ -13,11 +13,11 @@ const orders = [
 ]
 
 const statusConfig = {
-  pending: { label: 'Menunggu', color: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400' },
-  preparing: { label: 'Diproses', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  ready: { label: 'Siap', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  completed: { label: 'Selesai', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
-  cancelled: { label: 'Dibatalkan', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  pending: { label: 'Menunggu', color: 'bg-gray-100 text-gray-600' },
+  preparing: { label: 'Diproses', color: 'bg-orange-100 text-orange-700' },
+  ready: { label: 'Siap', color: 'bg-blue-100 text-blue-700' },
+  completed: { label: 'Selesai', color: 'bg-secondary text-primary' },
+  cancelled: { label: 'Dibatalkan', color: 'bg-red-100 text-red-700' },
 }
 
 export function Orders() {
@@ -27,7 +27,7 @@ export function Orders() {
   const filteredOrders = orders.filter(order => {
     if (filter !== 'all' && order.status !== filter) return false
     if (searchQuery && !order.id.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !order.table.toLowerCase().includes(searchQuery.toLowerCase())) return false
+      !order.table.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
   })
 
@@ -37,8 +37,8 @@ export function Orders() {
         {/* Page header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Pesanan</h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <h1 className="text-2xl font-bold text-primary">Pesanan</h1>
+            <p className="text-sm text-gray-500">
               Kelola semua pesanan yang masuk
             </p>
           </div>
@@ -48,23 +48,23 @@ export function Orders() {
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Cari pesanan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
             />
           </div>
 
           {/* Status filter */}
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-zinc-400" />
+            <Filter className="w-4 h-4 text-gray-400" />
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="px-3 py-2 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+              className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-gray-600"
             >
               <option value="all">Semua Status</option>
               <option value="pending">Menunggu</option>
@@ -76,63 +76,63 @@ export function Orders() {
         </div>
 
         {/* Orders table */}
-        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">ID</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Meja</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Item</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Pembayaran</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Waktu</th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Aksi</th>
+                <tr className="border-b border-gray-100 bg-gray-50/50">
+                  <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
+                  <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Meja</th>
+                  <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Item</th>
+                  <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Pembayaran</th>
+                  <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="text-left px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Waktu</th>
+                  <th className="text-right px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              <tbody className="divide-y divide-gray-100">
                 {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-zinc-900 dark:text-white">{order.id}</span>
+                  <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-bold text-primary">{order.id}</span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-zinc-600 dark:text-zinc-400">{order.table}</span>
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-medium text-gray-600">{order.table}</span>
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-600">
                         {order.items.slice(0, 2).join(', ')}
                         {order.items.length > 2 && ` +${order.items.length - 2}`}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-medium text-zinc-900 dark:text-white">
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-bold text-primary">
                         Rp {order.total.toLocaleString('id-ID')}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-zinc-600 dark:text-zinc-400">{order.payment}</span>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-600">{order.payment}</span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusConfig[order.status].color}`}>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex px-2.5 py-1 text-xs font-bold rounded-full ${statusConfig[order.status].color}`}>
                         {statusConfig[order.status].label}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-zinc-500 dark:text-zinc-400">{order.time}</span>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-500">{order.time}</span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
-                        <button className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                        <button className="p-2 rounded-lg text-gray-400 hover:text-primary hover:bg-gray-100 transition-colors">
                           <Eye className="w-4 h-4" />
                         </button>
                         {order.status !== 'completed' && order.status !== 'cancelled' && (
                           <>
-                            <button className="p-1.5 rounded-lg text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
+                            <button className="p-2 rounded-lg text-secondary hover:text-primary hover:bg-secondary/20 transition-colors">
                               <Check className="w-4 h-4" />
                             </button>
-                            <button className="p-1.5 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                            <button className="p-2 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors">
                               <X className="w-4 h-4" />
                             </button>
                           </>
@@ -146,8 +146,12 @@ export function Orders() {
           </div>
 
           {filteredOrders.length === 0 && (
-            <div className="p-8 text-center">
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Tidak ada pesanan ditemukan</p>
+            <div className="p-12 text-center">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-gray-300" />
+              </div>
+              <h3 className="text-lg font-bold text-primary mb-1">Tidak ada pesanan ditemukan</h3>
+              <p className="text-sm text-gray-500">Coba ubah kata kunci pencarian atau filter status</p>
             </div>
           )}
         </div>
