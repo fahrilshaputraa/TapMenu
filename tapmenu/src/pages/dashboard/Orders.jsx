@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { Modal } from '../../components/Modal'
 
 export function Orders() {
   const [orders, setOrders] = useState([
@@ -162,8 +163,8 @@ export function Orders() {
                       key={tab.id}
                       onClick={() => setFilter(tab.id)}
                       className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${filter === tab.id
-                          ? "bg-primary text-white shadow-sm"
-                          : "text-gray-500 hover:bg-gray-50 font-medium"
+                        ? "bg-primary text-white shadow-sm"
+                        : "text-gray-500 hover:bg-gray-50 font-medium"
                         }`}
                     >
                       {tab.label}
@@ -286,25 +287,15 @@ export function Orders() {
         </div>
 
         {/* Detail Modal */}
-        {selectedOrder && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 fade-in">
-            <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-
-              {/* Modal Header */}
-              <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-white z-10">
-                <div>
-                  <h3 className="font-bold text-lg text-dark">Detail Pesanan</h3>
-                  <p className="text-xs text-gray-500">{selectedOrder.id}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className="w-8 h-8 rounded-full bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"
-                >
-                  <i className="fa-solid fa-xmark"></i>
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 custom-scroll bg-[#F9FAFB]">
+        <Modal
+          isOpen={!!selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          title="Detail Pesanan"
+          size="md"
+        >
+          {selectedOrder && (
+            <>
+              <div className="space-y-6">
 
                 {/* Status Box */}
                 <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm mb-4">
@@ -319,9 +310,9 @@ export function Orders() {
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-bold text-gray-400 uppercase">Status</span>
                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${selectedOrder.status === 'new' ? 'bg-yellow-100 text-yellow-700' :
-                        selectedOrder.status === 'process' ? 'bg-blue-100 text-blue-700' :
-                          selectedOrder.status === 'ready' ? 'bg-green-100 text-green-700' :
-                            'bg-gray-100 text-gray-500'
+                      selectedOrder.status === 'process' ? 'bg-blue-100 text-blue-700' :
+                        selectedOrder.status === 'ready' ? 'bg-green-100 text-green-700' :
+                          'bg-gray-100 text-gray-500'
                       }`}>
                       {selectedOrder.status === 'new' ? 'Baru' :
                         selectedOrder.status === 'process' ? 'Dimasak' :
@@ -366,8 +357,6 @@ export function Orders() {
                   </div>
                 </div>
               </div>
-
-              {/* Modal Actions */}
               <div className="p-5 bg-white border-t border-gray-100 grid grid-cols-1 gap-3">
                 {selectedOrder.status === 'new' && (
                   <button
@@ -399,10 +388,10 @@ export function Orders() {
                   </button>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </DashboardLayout>
+            </>
+          )}
+        </Modal >
+      </div >
+    </DashboardLayout >
   )
 }

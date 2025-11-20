@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Plus, Search, Edit2, Trash2, Image, X, Upload, Heart, Star, Info } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Image, Upload, Heart, Star, Info } from 'lucide-react'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { Modal } from '../../components/Modal'
 
 const categories = [
   { id: 'all', name: 'Semua' },
@@ -183,11 +184,11 @@ export function MenuManagement() {
       variants: formData.variants.map(g =>
         g.id === groupId
           ? {
-              ...g,
-              options: g.options.map(o =>
-                o.id === optionId ? { ...o, [field]: value } : o
-              )
-            }
+            ...g,
+            options: g.options.map(o =>
+              o.id === optionId ? { ...o, [field]: value } : o
+            )
+          }
           : g
       )
     })
@@ -291,11 +292,10 @@ export function MenuManagement() {
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${
-                    selectedCategory === category.id
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-white text-gray-500 hover:text-primary hover:bg-gray-50 border border-gray-200'
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap ${selectedCategory === category.id
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'bg-white text-gray-500 hover:text-primary hover:bg-gray-50 border border-gray-200'
+                    }`}
                 >
                   {category.name}
                 </button>
@@ -445,419 +445,385 @@ export function MenuManagement() {
       </div>
 
       {/* Add/Edit Menu Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 fade-in">
-          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title={editingItem ? 'Edit Menu' : 'Tambah Menu Baru'}
+        size="2xl"
+      >
+        {/* Tabs Navigation */}
+        <div className="flex border-b border-gray-100 bg-gray-50 px-5 pt-2 gap-4 overflow-x-auto -mx-6 -mt-4 mb-6">
+          <button
+            onClick={() => setActiveTab('basic')}
+            className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap px-4 ${activeTab === 'basic'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500 hover:text-dark'
+              }`}
+          >
+            Info Dasar
+          </button>
+          <button
+            onClick={() => setActiveTab('pricing')}
+            className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap px-4 ${activeTab === 'pricing'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500 hover:text-dark'
+              }`}
+          >
+            Harga & Pajak
+          </button>
+          <button
+            onClick={() => setActiveTab('variants')}
+            className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap px-4 ${activeTab === 'variants'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500 hover:text-dark'
+              }`}
+          >
+            Varian
+          </button>
+          <button
+            onClick={() => setActiveTab('others')}
+            className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap px-4 ${activeTab === 'others'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-gray-500 hover:text-dark'
+              }`}
+          >
+            Stok & Lainnya
+          </button>
+        </div>
 
-            {/* Header */}
-            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-white z-10">
-              <h3 className="font-bold text-lg text-dark">
-                {editingItem ? 'Edit Menu' : 'Tambah Menu Baru'}
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Modal Body (Scrollable) */}
 
-            {/* Tabs Navigation */}
-            <div className="flex border-b border-gray-100 bg-gray-50 px-5 pt-2 gap-4 overflow-x-auto">
-              <button
-                onClick={() => setActiveTab('basic')}
-                className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === 'basic'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-dark'
-                }`}
-              >
-                Info Dasar
-              </button>
-              <button
-                onClick={() => setActiveTab('pricing')}
-                className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === 'pricing'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-dark'
-                }`}
-              >
-                Harga & Pajak
-              </button>
-              <button
-                onClick={() => setActiveTab('variants')}
-                className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === 'variants'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-dark'
-                }`}
-              >
-                Varian
-              </button>
-              <button
-                onClick={() => setActiveTab('others')}
-                className={`pb-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === 'others'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-gray-500 hover:text-dark'
-                }`}
-              >
-                Stok & Lainnya
-              </button>
-            </div>
-
-            {/* Modal Body (Scrollable) */}
-            <div className="flex-1 overflow-y-auto p-6">
-
-              {/* TAB 1: INFO DASAR */}
-              {activeTab === 'basic' && (
-                <div className="space-y-5 fade-in">
-                  <div className="flex flex-col sm:flex-row gap-6">
-                    {/* Image Upload */}
-                    <div className="w-full sm:w-1/3">
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Foto Menu</label>
-                      <div className="relative aspect-square bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center group cursor-pointer overflow-hidden hover:border-primary transition-colors">
-                        {formData.image ? (
-                          <img src={formData.image} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
-                        ) : (
-                          <div className="text-center text-gray-400 group-hover:text-primary">
-                            <Upload className="w-6 h-6 mx-auto mb-1" />
-                            <p className="text-[10px] font-bold uppercase">Upload</p>
-                          </div>
-                        )}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          onChange={handleImageUpload}
-                        />
-                      </div>
-                      <p className="text-[10px] text-gray-400 mt-2 text-center">Min. 500x500px (JPG/PNG)</p>
+        {/* TAB 1: INFO DASAR */}
+        {activeTab === 'basic' && (
+          <div className="space-y-5 fade-in">
+            <div className="flex flex-col sm:flex-row gap-6">
+              {/* Image Upload */}
+              <div className="w-full sm:w-1/3">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Foto Menu</label>
+                <div className="relative aspect-square bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300 flex items-center justify-center group cursor-pointer overflow-hidden hover:border-primary transition-colors">
+                  {formData.image ? (
+                    <img src={formData.image} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-center text-gray-400 group-hover:text-primary">
+                      <Upload className="w-6 h-6 mx-auto mb-1" />
+                      <p className="text-[10px] font-bold uppercase">Upload</p>
                     </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2 text-center">Min. 500x500px (JPG/PNG)</p>
+              </div>
 
-                    {/* Basic Inputs */}
-                    <div className="w-full sm:w-2/3 space-y-4">
+              {/* Basic Inputs */}
+              <div className="w-full sm:w-2/3 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                    Nama Menu <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
+                    placeholder="Contoh: Nasi Goreng Spesial"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                    Kategori <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
+                  >
+                    {menuCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Deskripsi</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium resize-none"
+                    placeholder="Jelaskan bahan utama atau rasa..."
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: HARGA & PAJAK */}
+        {activeTab === 'pricing' && (
+          <div className="space-y-5 fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
+                  Harga Dasar (Rp) <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Rp</span>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-lg font-bold text-dark"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Diskon (%)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={formData.discount}
+                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
+                    placeholder="0"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">Kosongkan jika tidak ada diskon.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Pajak / PPN (%)</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={formData.tax}
+                    onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
+                    placeholder="10"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">Standar PPN restoran 10%.</p>
+              </div>
+            </div>
+
+            {/* Preview Box */}
+            <div className="bg-secondary/30 rounded-xl p-4 border border-secondary mt-4">
+              <p className="text-xs font-bold text-primary mb-2 uppercase">Preview Harga Pelanggan</p>
+              <div className="flex justify-between items-center">
+                <div>
+                  {parseInt(formData.discount) > 0 && (
+                    <>
+                      <p className="text-sm text-gray-500">
+                        Harga Normal: <span className="line-through">Rp {parseInt(formData.price || 0).toLocaleString('id-ID')}</span>
+                      </p>
+                      <p className="text-xs text-accent font-bold">Hemat {formData.discount}%</p>
+                    </>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-extrabold text-primary">
+                    Rp {calculateFinalPrice().toLocaleString('id-ID')}
+                  </p>
+                  <p className="text-[10px] text-gray-500">*Belum termasuk PPN</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: VARIAN */}
+        {activeTab === 'variants' && (
+          <div className="space-y-6 fade-in">
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 items-start">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-xs font-bold text-blue-800">Info Varian</h4>
+                <p className="text-[10px] text-blue-600">
+                  Gunakan varian untuk opsi tambahan seperti "Level Pedas" (Pilih Satu) atau "Toping Tambahan" (Pilih Banyak).
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {formData.variants.map((group) => (
+                <div key={group.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200 relative">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
-                          Nama Menu <span className="text-red-500">*</span>
-                        </label>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Grup</label>
                         <input
                           type="text"
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
-                          placeholder="Contoh: Nasi Goreng Spesial"
+                          value={group.name}
+                          onChange={(e) => updateVariantGroup(group.id, 'name', e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                          placeholder="Cth: Level Pedas"
                         />
                       </div>
-
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
-                          Kategori <span className="text-red-500">*</span>
-                        </label>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipe Pilihan</label>
                         <select
-                          value={formData.category}
-                          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
+                          value={group.type}
+                          onChange={(e) => updateVariantGroup(group.id, 'type', e.target.value)}
+                          className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
                         >
-                          {menuCategories.map((cat) => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                          ))}
+                          <option value="radio">Pilih Satu (Wajib)</option>
+                          <option value="checkbox">Pilih Banyak (Opsional)</option>
                         </select>
                       </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Deskripsi</label>
-                        <textarea
-                          value={formData.description}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                          rows={3}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium resize-none"
-                          placeholder="Jelaskan bahan utama atau rasa..."
-                        />
-                      </div>
                     </div>
+                    <button
+                      onClick={() => removeVariantGroup(group.id)}
+                      className="ml-3 text-gray-400 hover:text-red-500"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                </div>
-              )}
 
-              {/* TAB 2: HARGA & PAJAK */}
-              {activeTab === 'pricing' && (
-                <div className="space-y-5 fade-in">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="sm:col-span-2">
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">
-                        Harga Dasar (Rp) <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">Rp</span>
+                  <div className="space-y-2">
+                    {group.options.map((option) => (
+                      <div key={option.id} className="flex gap-2 items-center">
                         <input
-                          type="number"
-                          value={formData.price}
-                          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-lg font-bold text-dark"
-                          placeholder="0"
+                          type="text"
+                          value={option.name}
+                          onChange={(e) => updateVariantOption(group.id, option.id, 'name', e.target.value)}
+                          className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
+                          placeholder="Nama Opsi (Cth: Sedang)"
                         />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Diskon (%)</label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={formData.discount}
-                          onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
-                          placeholder="0"
-                        />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
-                      </div>
-                      <p className="text-[10px] text-gray-400 mt-1">Kosongkan jika tidak ada diskon.</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Pajak / PPN (%)</label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          value={formData.tax}
-                          onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
-                          placeholder="10"
-                        />
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
-                      </div>
-                      <p className="text-[10px] text-gray-400 mt-1">Standar PPN restoran 10%.</p>
-                    </div>
-                  </div>
-
-                  {/* Preview Box */}
-                  <div className="bg-secondary/30 rounded-xl p-4 border border-secondary mt-4">
-                    <p className="text-xs font-bold text-primary mb-2 uppercase">Preview Harga Pelanggan</p>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        {parseInt(formData.discount) > 0 && (
-                          <>
-                            <p className="text-sm text-gray-500">
-                              Harga Normal: <span className="line-through">Rp {parseInt(formData.price || 0).toLocaleString('id-ID')}</span>
-                            </p>
-                            <p className="text-xs text-accent font-bold">Hemat {formData.discount}%</p>
-                          </>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-extrabold text-primary">
-                          Rp {calculateFinalPrice().toLocaleString('id-ID')}
-                        </p>
-                        <p className="text-[10px] text-gray-500">*Belum termasuk PPN</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* TAB 3: VARIAN */}
-              {activeTab === 'variants' && (
-                <div className="space-y-6 fade-in">
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3 items-start">
-                    <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="text-xs font-bold text-blue-800">Info Varian</h4>
-                      <p className="text-[10px] text-blue-600">
-                        Gunakan varian untuk opsi tambahan seperti "Level Pedas" (Pilih Satu) atau "Toping Tambahan" (Pilih Banyak).
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    {formData.variants.map((group) => (
-                      <div key={group.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200 relative">
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1 grid grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nama Grup</label>
-                              <input
-                                type="text"
-                                value={group.name}
-                                onChange={(e) => updateVariantGroup(group.id, 'name', e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                                placeholder="Cth: Level Pedas"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipe Pilihan</label>
-                              <select
-                                value={group.type}
-                                onChange={(e) => updateVariantGroup(group.id, 'type', e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                              >
-                                <option value="radio">Pilih Satu (Wajib)</option>
-                                <option value="checkbox">Pilih Banyak (Opsional)</option>
-                              </select>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => removeVariantGroup(group.id)}
-                            className="ml-3 text-gray-400 hover:text-red-500"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <div className="relative w-24">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">+Rp</span>
+                          <input
+                            type="number"
+                            value={option.price}
+                            onChange={(e) => updateVariantOption(group.id, option.id, 'price', parseInt(e.target.value) || 0)}
+                            className="w-full bg-white border border-gray-200 rounded-lg pl-8 pr-2 py-2 text-xs focus:outline-none focus:border-primary"
+                            placeholder="0"
+                          />
                         </div>
-
-                        <div className="space-y-2">
-                          {group.options.map((option) => (
-                            <div key={option.id} className="flex gap-2 items-center">
-                              <input
-                                type="text"
-                                value={option.name}
-                                onChange={(e) => updateVariantOption(group.id, option.id, 'name', e.target.value)}
-                                className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
-                                placeholder="Nama Opsi (Cth: Sedang)"
-                              />
-                              <div className="relative w-24">
-                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">+Rp</span>
-                                <input
-                                  type="number"
-                                  value={option.price}
-                                  onChange={(e) => updateVariantOption(group.id, option.id, 'price', parseInt(e.target.value) || 0)}
-                                  className="w-full bg-white border border-gray-200 rounded-lg pl-8 pr-2 py-2 text-xs focus:outline-none focus:border-primary"
-                                  placeholder="0"
-                                />
-                              </div>
-                              <button
-                                onClick={() => removeVariantOption(group.id, option.id)}
-                                className="text-gray-300 hover:text-red-500"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-
                         <button
-                          onClick={() => addVariantOption(group.id)}
-                          className="mt-3 text-xs font-bold text-primary hover:underline"
+                          onClick={() => removeVariantOption(group.id, option.id)}
+                          className="text-gray-300 hover:text-red-500"
                         >
-                          + Tambah Opsi
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
                   </div>
 
                   <button
-                    onClick={addVariantGroup}
-                    className="w-full py-3 border-2 border-dashed border-primary/30 rounded-xl text-primary font-bold text-sm hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                    onClick={() => addVariantOption(group.id)}
+                    className="mt-3 text-xs font-bold text-primary hover:underline"
                   >
-                    <Plus className="w-4 h-4" /> Tambah Grup Varian
+                    + Tambah Opsi
                   </button>
                 </div>
-              )}
+              ))}
+            </div>
 
-              {/* TAB 4: STOK & LAINNYA */}
-              {activeTab === 'others' && (
-                <div className="space-y-6 fade-in">
+            <button
+              onClick={addVariantGroup}
+              className="w-full py-3 border-2 border-dashed border-primary/30 rounded-xl text-primary font-bold text-sm hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Tambah Grup Varian
+            </button>
+          </div>
+        )}
 
-                  {/* Stock Management */}
-                  <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
-                    <div className="flex justify-between items-center mb-4">
-                      <div>
-                        <h4 className="font-bold text-dark text-sm">Manajemen Stok</h4>
-                        <p className="text-[10px] text-gray-500">Aktifkan untuk melacak jumlah stok.</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.trackStock}
-                          onChange={(e) => setFormData({ ...formData, trackStock: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                      </label>
-                    </div>
+        {/* TAB 4: STOK & LAINNYA */}
+        {activeTab === 'others' && (
+          <div className="space-y-6 fade-in">
 
-                    {formData.trackStock && (
-                      <div className="transition-all">
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Jumlah Stok Saat Ini</label>
-                        <input
-                          type="number"
-                          value={formData.stock}
-                          onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary text-sm font-medium"
-                          placeholder="Contoh: 50"
-                        />
-                      </div>
-                    )}
-                  </div>
+            {/* Stock Management */}
+            <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h4 className="font-bold text-dark text-sm">Manajemen Stok</h4>
+                  <p className="text-[10px] text-gray-500">Aktifkan untuk melacak jumlah stok.</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.trackStock}
+                    onChange={(e) => setFormData({ ...formData, trackStock: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
 
-                  {/* Labels */}
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Label Menu (Opsional)</label>
-                    <div className="flex gap-3">
-                      <label className="cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={formData.isFavorite}
-                          onChange={(e) => setFormData({ ...formData, isFavorite: e.target.checked })}
-                          className="peer sr-only"
-                        />
-                        <div className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-xs font-bold peer-checked:bg-[#FFF0EB] peer-checked:text-accent peer-checked:border-accent transition-all flex items-center gap-1">
-                          <Heart className="w-3 h-3" /> Favorit
-                        </div>
-                      </label>
-                      <label className="cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={formData.isNew}
-                          onChange={(e) => setFormData({ ...formData, isNew: e.target.checked })}
-                          className="peer sr-only"
-                        />
-                        <div className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-xs font-bold peer-checked:bg-secondary peer-checked:text-primary peer-checked:border-primary transition-all flex items-center gap-1">
-                          <Star className="w-3 h-3" /> Baru
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Active Status */}
-                  <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.isActive}
-                        onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
-                    <div>
-                      <p className="text-sm font-bold text-dark">Tampilkan di Menu</p>
-                      <p className="text-[10px] text-gray-500">Menu ini bisa dipesan oleh pelanggan.</p>
-                    </div>
-                  </div>
-
+              {formData.trackStock && (
+                <div className="transition-all">
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Jumlah Stok Saat Ini</label>
+                  <input
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary text-sm font-medium"
+                    placeholder="Contoh: 50"
+                  />
                 </div>
               )}
-
             </div>
 
-            {/* Footer Actions */}
-            <div className="p-5 bg-gray-50 border-t border-gray-100 flex gap-3 z-10">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleSaveMenu}
-                className="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary/90 transition-colors"
-              >
-                Simpan Menu
-              </button>
+            {/* Labels */}
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Label Menu (Opsional)</label>
+              <div className="flex gap-3">
+                <label className="cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.isFavorite}
+                    onChange={(e) => setFormData({ ...formData, isFavorite: e.target.checked })}
+                    className="peer sr-only"
+                  />
+                  <div className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-xs font-bold peer-checked:bg-[#FFF0EB] peer-checked:text-accent peer-checked:border-accent transition-all flex items-center gap-1">
+                    <Heart className="w-3 h-3" /> Favorit
+                  </div>
+                </label>
+                <label className="cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formData.isNew}
+                    onChange={(e) => setFormData({ ...formData, isNew: e.target.checked })}
+                    className="peer sr-only"
+                  />
+                  <div className="px-4 py-2 rounded-lg border border-gray-200 text-gray-500 text-xs font-bold peer-checked:bg-secondary peer-checked:text-primary peer-checked:border-primary transition-all flex items-center gap-1">
+                    <Star className="w-3 h-3" /> Baru
+                  </div>
+                </label>
+              </div>
             </div>
+
+            {/* Active Status */}
+            <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-200">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+              </label>
+              <div>
+                <p className="text-sm font-bold text-dark">Tampilkan di Menu</p>
+                <p className="text-[10px] text-gray-500">Menu ini bisa dipesan oleh pelanggan.</p>
+              </div>
+            </div>
+
           </div>
-        </div>
-      )}
-    </DashboardLayout>
+        )}
+
+      </Modal>
+
+    </DashboardLayout >
   )
 }

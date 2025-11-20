@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { Modal } from '../../components/Modal'
 
 export function Category() {
     // --- DATA ---
@@ -118,8 +119,8 @@ export function Category() {
                                     key={type}
                                     onClick={() => setFilter(type)}
                                     className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${filter === type
-                                            ? 'border-primary text-primary'
-                                            : 'border-transparent text-gray-500 hover:text-dark'
+                                        ? 'border-primary text-primary'
+                                        : 'border-transparent text-gray-500 hover:text-dark'
                                         }`}
                                 >
                                     {type === 'all' ? 'Semua' : type === 'menu' ? 'Menu Makanan' : 'Meja'}
@@ -218,123 +219,100 @@ export function Category() {
                 </div>
 
                 {/* === ADD/EDIT MODAL === */}
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 fade-in">
-                        <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-                            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                                <h3 className="font-bold text-lg text-dark">{editingId ? 'Edit Kategori' : 'Tambah Kategori'}</h3>
-                                <button
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="w-8 h-8 rounded-full bg-white text-gray-400 hover:text-red-500 shadow-sm flex items-center justify-center transition-colors"
-                                >
-                                    <i className="fa-solid fa-xmark"></i>
-                                </button>
-                            </div>
+                <Modal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    title={editingId ? 'Edit Kategori' : 'Tambah Kategori'}
+                    size="md"
+                >
+                    <div className="space-y-5">
 
-                            <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scroll">
-
-                                {/* Type Selection */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tipe Kategori <span className="text-red-500">*</span></label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <label className="cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="cat-type"
-                                                value="menu"
-                                                checked={formData.type === 'menu'}
-                                                onChange={() => handleTypeChange('menu')}
-                                                className="peer sr-only"
-                                            />
-                                            <div className="border border-gray-200 rounded-xl p-3 flex flex-col items-center hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 peer-checked:text-primary transition-all">
-                                                <i className="fa-solid fa-utensils mb-1"></i>
-                                                <span className="text-xs font-bold">Menu Makanan</span>
-                                            </div>
-                                        </label>
-                                        <label className="cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="cat-type"
-                                                value="table"
-                                                checked={formData.type === 'table'}
-                                                onChange={() => handleTypeChange('table')}
-                                                className="peer sr-only"
-                                            />
-                                            <div className="border border-gray-200 rounded-xl p-3 flex flex-col items-center hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 peer-checked:text-primary transition-all">
-                                                <i className="fa-solid fa-chair mb-1"></i>
-                                                <span className="text-xs font-bold">Meja / Area</span>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {/* Inputs */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Nama Kategori <span className="text-red-500">*</span></label>
+                        {/* Type Selection */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tipe Kategori <span className="text-red-500">*</span></label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <label className="cursor-pointer">
                                     <input
-                                        type="text"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm font-medium text-dark placeholder-gray-400"
-                                        placeholder="Contoh: Makanan Berat / Indoor"
+                                        type="radio"
+                                        name="cat-type"
+                                        value="menu"
+                                        checked={formData.type === 'menu'}
+                                        onChange={() => handleTypeChange('menu')}
+                                        className="peer sr-only"
                                     />
-                                </div>
-
-                                {/* Icon Picker */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Pilih Ikon</label>
-                                    <div className="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto custom-scroll p-1">
-                                        {(formData.type === 'menu' ? menuIcons : tableIcons).map(icon => (
-                                            <div
-                                                key={icon}
-                                                onClick={() => setFormData({ ...formData, icon })}
-                                                className={`w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors text-gray-500 ${formData.icon === icon ? 'bg-secondary border-primary text-primary' : ''
-                                                    }`}
-                                            >
-                                                <i className={`fa-solid ${icon}`}></i>
-                                            </div>
-                                        ))}
+                                    <div className="border border-gray-200 rounded-xl p-3 flex flex-col items-center hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 peer-checked:text-primary transition-all">
+                                        <i className="fa-solid fa-utensils mb-1"></i>
+                                        <span className="text-xs font-bold">Menu Makanan</span>
                                     </div>
-                                </div>
-
-                                {/* Status Toggle */}
-                                <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
-                                    <div>
-                                        <p className="text-sm font-bold text-dark">Status Aktif</p>
-                                        <p className="text-[10px] text-gray-400">Tampilkan di aplikasi</p>
+                                </label>
+                                <label className="cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="cat-type"
+                                        value="table"
+                                        checked={formData.type === 'table'}
+                                        onChange={() => handleTypeChange('table')}
+                                        className="peer sr-only"
+                                    />
+                                    <div className="border border-gray-200 rounded-xl p-3 flex flex-col items-center hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 peer-checked:text-primary transition-all">
+                                        <i className="fa-solid fa-chair mb-1"></i>
+                                        <span className="text-xs font-bold">Meja / Area</span>
                                     </div>
-                                    <div className="relative inline-block w-10 align-middle select-none">
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.active}
-                                            onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                                            className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
-                                        />
-                                        <label
-                                            onClick={() => setFormData({ ...formData, active: !formData.active })}
-                                            className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer transition-colors duration-300 ${formData.active ? 'bg-primary' : 'bg-gray-300'}`}
-                                        ></label>
-                                    </div>
-                                </div>
+                                </label>
                             </div>
+                        </div>
 
-                            <div className="p-5 border-t border-gray-100 flex gap-3">
-                                <button
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-colors"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={saveCategory}
-                                    className="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primaryLight transition-colors"
-                                >
-                                    Simpan
-                                </button>
+                        {/* Inputs */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Nama Kategori <span className="text-red-500">*</span></label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm font-medium text-dark placeholder-gray-400"
+                                placeholder="Contoh: Makanan Berat / Indoor"
+                            />
+                        </div>
+
+                        {/* Icon Picker */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Pilih Ikon</label>
+                            <div className="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto custom-scroll p-1">
+                                {(formData.type === 'menu' ? menuIcons : tableIcons).map(icon => (
+                                    <div
+                                        key={icon}
+                                        onClick={() => setFormData({ ...formData, icon })}
+                                        className={`w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors text-gray-500 ${formData.icon === icon ? 'bg-secondary border-primary text-primary' : ''
+                                            }`}
+                                    >
+                                        <i className={`fa-solid ${icon}`}></i>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Status Toggle */}
+                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <div>
+                                <p className="text-sm font-bold text-dark">Status Aktif</p>
+                                <p className="text-[10px] text-gray-400">Tampilkan di aplikasi</p>
+                            </div>
+                            <div className="relative inline-block w-10 align-middle select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.active}
+                                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                                    className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
+                                />
+                                <label
+                                    onClick={() => setFormData({ ...formData, active: !formData.active })}
+                                    className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer transition-colors duration-300 ${formData.active ? 'bg-primary' : 'bg-gray-300'}`}
+                                ></label>
                             </div>
                         </div>
                     </div>
-                )}
+
+                </Modal>
             </div>
         </DashboardLayout>
     )
