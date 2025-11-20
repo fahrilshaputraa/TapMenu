@@ -193,7 +193,7 @@ export function DashboardOverview() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
             <h3 className="font-bold text-lg mb-4 relative z-10">Aksi Cepat</h3>
             <div className="grid grid-cols-2 gap-3 relative z-10">
-              <Link to="/dashboard/menu/add" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+              <Link to="/dashboard/menu" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
                 <i className="fa-solid fa-plus-circle text-xl text-secondary"></i>
                 <span className="text-xs font-semibold">Tambah Menu</span>
               </Link>

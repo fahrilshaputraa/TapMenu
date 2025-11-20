@@ -3,12 +3,36 @@
 @theme {
     --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
     --color-primary: #1B4332;
+    --color-primary-light: #2D6A4F;
     --color-secondary: #D8F3DC;
     --color-accent: #E07A5F;
     --color-bg: #F7F5F2;
     --color-dark: #2D3436;
+    --color-pending: #F59E0B;
+    --color-processing: #3B82F6;
+    --color-ready: #10B981;
     --shadow-soft: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
     --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+@layer utilities {
+    .blink-dot {
+        animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+        0% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.4;
+        }
+
+        100% {
+            opacity: 1;
+        }
+    }
 }
 
 @layer base {

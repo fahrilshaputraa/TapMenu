@@ -14,6 +14,7 @@ import { Settings } from './pages/dashboard/Settings'
 import { ProfileSettings } from './pages/dashboard/ProfileSettings'
 import { StoreSettings } from './pages/dashboard/StoreSettings'
 import { MenuAppearance } from './pages/dashboard/MenuAppearance'
+import { Employee } from './pages/dashboard/Employee'
 import { CustomerMenu } from './pages/customer/Menu'
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
         <Route path="/dashboard/settings/profile" element={<ProfileSettings />} />
         <Route path="/dashboard/settings/store" element={<StoreSettings />} />
         <Route path="/dashboard/settings/appearance" element={<MenuAppearance />} />
+        <Route path="/dashboard/employee" element={<Employee />} />
         <Route path="/order/:tableId" element={<CustomerMenu />} />
         <Route path="/order" element={<CustomerMenu />} />
       </Routes>

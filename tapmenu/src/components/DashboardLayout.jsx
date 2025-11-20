@@ -14,8 +14,8 @@ export function DashboardLayout({ children }) {
   }
 
   const navLinkClass = (path) => `flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${isActive(path)
-      ? 'bg-secondary/50 text-primary font-bold'
-      : 'text-gray-500 font-medium hover:bg-gray-50 hover:text-dark'
+    ? 'bg-secondary/50 text-primary font-bold'
+    : 'text-gray-500 font-medium hover:bg-gray-50 hover:text-dark'
     }`
 
   return (
@@ -64,6 +64,9 @@ export function DashboardLayout({ children }) {
           </Link>
           <Link to="/dashboard/cashier" className={navLinkClass('/dashboard/cashier')}>
             <i className="fa-solid fa-wallet w-5"></i> Kasir
+          </Link>
+          <Link to="/dashboard/employee" className={navLinkClass('/dashboard/employee')}>
+            <i className="fa-solid fa-users-gear w-5"></i> Karyawan
           </Link>
 
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3 px-2">Pengaturan</div>
