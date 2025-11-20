@@ -13,6 +13,11 @@
     --color-ready: #10B981;
     --shadow-soft: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
     --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+
+    /* Dark Mode Colors */
+    --color-dark-bg: #111827;
+    --color-dark-surface: #1F2937;
+    --color-dark-border: #374151;
 }
 
 @layer utilities {
@@ -32,6 +37,40 @@
         100% {
             opacity: 1;
         }
+    }
+
+    /* Styled Toggle Switch */
+    .toggle-checkbox:checked {
+        right: 0;
+        border-color: var(--color-primary);
+    }
+
+    .toggle-checkbox:checked+.toggle-label {
+        background-color: var(--color-primary);
+    }
+
+    .toggle-checkbox {
+        right: calc(100% - 1.25rem);
+    }
+
+    /* Settings Section Title Line */
+    .section-title {
+        display: flex;
+        align-items: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #9ca3af;
+        margin-bottom: 1rem;
+    }
+
+    .section-title::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background-color: #e5e7eb;
+        margin-left: 0.75rem;
     }
 }
 
@@ -61,6 +100,38 @@
         background: var(--color-primary);
         border-radius: 4px;
     }
+
+    /* Dark Mode Transitions */
+    html.dark body {
+        background-color: var(--color-dark-bg);
+        color: #e5e7eb;
+    }
+
+    html.dark .bg-white {
+        background-color: var(--color-dark-surface);
+        border-color: var(--color-dark-border);
+    }
+
+    html.dark .text-dark {
+        color: white;
+    }
+
+    html.dark .text-gray-500 {
+        color: #9ca3af;
+    }
+
+    html.dark .border-gray-200,
+    html.dark .border-gray-100 {
+        border-color: var(--color-dark-border);
+    }
+
+    html.dark .bg-gray-50 {
+        background-color: rgba(17, 24, 39, 0.5);
+    }
+
+    html.dark .section-title::after {
+        background-color: var(--color-dark-border);
+    }
 }
 
 @layer utilities {
@@ -87,6 +158,10 @@
 
     .custom-scroll::-webkit-scrollbar-thumb:hover {
         background: #ccc;
+    }
+
+    html.dark .custom-scroll::-webkit-scrollbar-thumb {
+        background: #4b5563;
     }
 }
 

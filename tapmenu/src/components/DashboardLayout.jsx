@@ -9,6 +9,7 @@ export function DashboardLayout({ children }) {
 
   const isActive = (path) => {
     if (path === '/dashboard' && location.pathname === '/dashboard') return true
+    if (path === '/dashboard/settings' && location.pathname !== '/dashboard/settings') return false
     if (path !== '/dashboard' && location.pathname.startsWith(path)) return true
     return false
   }
@@ -53,6 +54,9 @@ export function DashboardLayout({ children }) {
           <Link to="/dashboard/menu" className={navLinkClass('/dashboard/menu')}>
             <i className="fa-solid fa-book-open w-5"></i> Daftar Menu
           </Link>
+          <Link to="/dashboard/category" className={navLinkClass('/dashboard/category')}>
+            <i className="fa-solid fa-tags w-5"></i> Kategori
+          </Link>
           <Link to="/dashboard/tables" className={navLinkClass('/dashboard/tables')}>
             <i className="fa-solid fa-chair w-5"></i> Meja
           </Link>
@@ -67,6 +71,9 @@ export function DashboardLayout({ children }) {
           </Link>
           <Link to="/dashboard/employee" className={navLinkClass('/dashboard/employee')}>
             <i className="fa-solid fa-users-gear w-5"></i> Karyawan
+          </Link>
+          <Link to="/dashboard/settings" className={navLinkClass('/dashboard/settings')}>
+            <i className="fa-solid fa-gears w-5"></i> Sistem & Bayar
           </Link>
 
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3 px-2">Pengaturan</div>

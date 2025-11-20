@@ -7,6 +7,7 @@ import { DashboardOverview } from './pages/dashboard/Overview'
 import { Cashier } from './pages/dashboard/Cashier'
 import { Orders } from './pages/dashboard/Orders'
 import { MenuManagement } from './pages/dashboard/MenuManagement'
+import { Category } from './pages/dashboard/Category'
 import { Tables } from './pages/dashboard/Tables'
 import { TableForm } from './pages/dashboard/TableForm'
 import { Reports } from './pages/dashboard/Reports'
@@ -29,6 +30,8 @@ function App() {
         <Route path="/dashboard/cashier" element={<Cashier />} />
         <Route path="/dashboard/orders" element={<Orders />} />
         <Route path="/dashboard/menu" element={<MenuManagement />} />
+        <Route path="/dashboard/category" element={<Category />} />
+        <Route path="/dashboard/settings" element={<Settings />} />
         <Route path="/dashboard/tables" element={<Tables />} />
         <Route path="/dashboard/tables/add" element={<TableForm />} />
         <Route path="/dashboard/tables/edit/:id" element={<TableForm />} />
