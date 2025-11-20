@@ -191,11 +191,11 @@ export function DashboardLayout({ children }) {
             </button>
 
             {/* Store Status Toggle */}
-            <div className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-full border border-secondary cursor-pointer">
+            <Link to="/order" className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-full border border-secondary cursor-pointer hover:bg-secondary/40 transition-colors">
               <div className="w-2 h-2 bg-green-500 rounded-full live-indicator"></div>
-              <span className="text-xs font-bold text-primary">Buka</span>
-              <i className="fa-solid fa-chevron-down text-[10px] text-primary ml-1"></i>
-            </div>
+              <span className="text-xs font-bold text-primary">Buka menu</span>
+              <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-primary ml-1"></i>
+            </Link>
           </div>
         </header>
 

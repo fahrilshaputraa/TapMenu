@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { Table } from '../../components/Table'
 
 export function Employee() {
     const [employees, setEmployees] = useState([
@@ -13,7 +14,7 @@ export function Employee() {
     const [showModal, setShowModal] = useState(false)
     const [editingId, setEditingId] = useState(null)
     const [searchQuery, setSearchQuery] = useState('')
-    const [showPin, setShowPin] = useState(false)
+    const [showPin, setShowPin] = useState({}) // Changed to object to store visibility per employee
 
     const [formData, setFormData] = useState({
         name: '',
@@ -44,7 +45,8 @@ export function Employee() {
             })
         }
         setShowModal(true)
-        setShowPin(false)
+        // Reset pin visibility for the modal
+        setShowPin({})
     }
 
     const handleCloseModal = () => {
@@ -84,7 +86,7 @@ export function Employee() {
         handleCloseModal()
     }
 
-    const handleDelete = (id) => {
+    const deleteEmployee = (id) => { // Renamed from handleDelete
         if (window.confirm("Hapus kasir ini?")) {
             setEmployees(employees.filter(e => e.id !== id))
         }
@@ -94,6 +96,13 @@ export function Employee() {
         setEmployees(employees.map(emp =>
             emp.id === id ? { ...emp, active: !emp.active } : emp
         ))
+    }
+
+    const togglePinVisibility = (id) => {
+        setShowPin(prev => ({
+            ...prev,
+            [id]: !prev[id]
+        }))
     }
 
     return (
@@ -140,100 +149,106 @@ export function Employee() {
             </div>
 
             {/* Employee Table */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50/50 border-b border-gray-100">
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">Karyawan</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ID Pegawai</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">PIN Akses</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status Login</th>
-                            <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {filteredEmployees.length === 0 ? (
-                            <tr>
-                                <td colSpan="5" className="py-16 text-center">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-3">
-                                            <i className="fa-solid fa-user-slash text-2xl"></i>
-                                        </div>
-                                        <h3 className="text-dark font-bold text-sm">Tidak ditemukan</h3>
-                                        <p className="text-gray-400 text-xs mt-1">Coba kata kunci lain atau tambah kasir baru.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        ) : (
-                            filteredEmployees.map((emp) => (
-                                <tr key={emp.id} className={`hover:bg-gray-50 transition-colors group ${!emp.active ? 'opacity-50 bg-gray-50' : ''}`}>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-4">
-                                            <img src={emp.avatar} alt={emp.name} className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm" />
-                                            <div>
-                                                <div className="font-bold text-dark text-sm">{emp.name}</div>
-                                                <div className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5 text-primary/80">Kasir</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200">#{emp.id.toString().padStart(3, '0')}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3 group/pin">
-                                            <span className="font-mono font-bold text-dark text-sm tracking-[0.2em] blur-[3px] group-hover/pin:blur-0 transition-all cursor-default">******</span>
-                                            <button
-                                                onClick={() => alert(`PIN: ${emp.pin}`)}
-                                                className="text-gray-300 hover:text-primary transition-colors"
-                                                title="Lihat PIN"
-                                            >
-                                                <i className="fa-regular fa-eye text-xs"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative inline-block w-9 align-middle select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={emp.active}
-                                                    onChange={() => toggleStatus(emp.id)}
-                                                    className="peer absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
-                                                />
-                                                <label
-                                                    onClick={() => toggleStatus(emp.id)}
-                                                    className="block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300 peer-checked:bg-primary"
-                                                ></label>
-                                            </div>
-                                            {emp.active ? (
-                                                <span className="text-green-600 font-bold text-xs">Aktif</span>
-                                            ) : (
-                                                <span className="text-gray-400 font-bold text-xs">Nonaktif</span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => handleOpenModal(emp)}
-                                                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm"
-                                            >
-                                                <i className="fa-solid fa-pen text-xs"></i>
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(emp.id)}
-                                                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm"
-                                            >
-                                                <i className="fa-solid fa-trash text-xs"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            <Table
+                columns={[
+                    {
+                        header: 'Karyawan',
+                        className: 'w-1/3',
+                        accessor: (emp) => (
+                            <div className="flex items-center gap-4">
+                                <img
+                                    src={emp.avatar}
+                                    alt={emp.name}
+                                    className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                                />
+                                <div>
+                                    <div className="font-bold text-dark text-sm">{emp.name}</div>
+                                    <div className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5 text-primary/80">{emp.role}</div>
+                                </div>
+                            </div>
+                        )
+                    },
+                    {
+                        header: 'ID Pegawai',
+                        accessor: (emp) => <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200">#{emp.id.toString().padStart(3, '0')}</span>
+                    },
+                    {
+                        header: 'PIN Akses',
+                        accessor: (emp) => (
+                            <div className="flex items-center gap-3 group/pin">
+                                <span className="font-mono font-bold text-dark text-sm tracking-[0.2em] blur-[3px] group-hover/pin:blur-0 transition-all cursor-default">
+                                    {showPin[emp.id] ? emp.pin : '******'}
+                                </span>
+                                <button
+                                    onClick={() => togglePinVisibility(emp.id)}
+                                    className="text-gray-300 hover:text-primary transition-colors"
+                                    title="Lihat PIN"
+                                >
+                                    <i className={`fa-regular ${showPin[emp.id] ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
+                                </button>
+                            </div>
+                        )
+                    },
+                    {
+                        header: 'Status Login',
+                        accessor: (emp) => (
+                            <div className="flex items-center gap-3">
+                                <div className="relative inline-block w-9 align-middle select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={emp.active}
+                                        onChange={() => toggleStatus(emp.id)}
+                                        className="peer absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
+                                    />
+                                    <label
+                                        onClick={() => toggleStatus(emp.id)}
+                                        className="block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300 peer-checked:bg-primary"
+                                    ></label>
+                                </div>
+                                {emp.active ? (
+                                    <span className="text-green-600 font-bold text-xs">Aktif</span>
+                                ) : (
+                                    <span className="text-gray-400 font-bold text-xs">Nonaktif</span>
+                                )}
+                            </div>
+                        )
+                    },
+                    {
+                        header: 'Aksi',
+                        className: 'text-right',
+                        cellClassName: 'text-right',
+                        accessor: (emp) => (
+                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => handleOpenModal(emp)} // Use handleOpenModal for editing
+                                    className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm"
+                                >
+                                    <i className="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button
+                                    onClick={() => deleteEmployee(emp.id)}
+                                    className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm"
+                                >
+                                    <i className="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        )
+                    }
+                ]}
+                data={filteredEmployees.map(emp => ({
+                    ...emp,
+                    _rowClass: !emp.active ? 'opacity-50 bg-gray-50' : ''
+                }))}
+                emptyState={
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-3">
+                            <i className="fa-solid fa-user-slash text-2xl"></i>
+                        </div>
+                        <h3 className="text-dark font-bold text-sm">Tidak ditemukan</h3>
+                        <p className="text-gray-400 text-xs mt-1">Coba kata kunci lain atau tambah kasir baru.</p>
+                    </div>
+                }
+            />
 
             {/* Modal */}
             {showModal && (

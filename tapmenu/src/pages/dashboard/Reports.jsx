@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { Table } from '../../components/Table'
 
 // Data dummy
 const reportData = {
@@ -214,31 +215,28 @@ export function Reports() {
         <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
           <button
             onClick={() => setFilter('today')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
-              filter === 'today'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${filter === 'today'
                 ? 'bg-gray-100 text-dark shadow-sm'
                 : 'text-gray-500 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Hari Ini
           </button>
           <button
             onClick={() => setFilter('week')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
-              filter === 'week'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${filter === 'week'
                 ? 'bg-gray-100 text-dark shadow-sm'
                 : 'text-gray-500 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Minggu Ini
           </button>
           <button
             onClick={() => setFilter('month')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
-              filter === 'month'
+            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${filter === 'month'
                 ? 'bg-gray-100 text-dark shadow-sm'
                 : 'text-gray-500 hover:bg-gray-50'
-            }`}
+              }`}
           >
             Bulan Ini
           </button>
@@ -371,36 +369,41 @@ export function Reports() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                <th className="px-6 py-4">No. Order</th>
-                <th className="px-6 py-4">Waktu</th>
-                <th className="px-6 py-4">Kasir</th>
-                <th className="px-6 py-4">Metode</th>
-                <th className="px-6 py-4 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm text-dark">
-              {filteredTransactions.map((trx) => (
-                <tr key={trx.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-mono text-xs font-bold text-primary">{trx.id}</td>
-                  <td className="px-6 py-4 text-gray-500">{trx.time}</td>
-                  <td className="px-6 py-4 font-bold text-dark">{trx.cashier}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${
-                      trx.method === 'QRIS'
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'bg-green-50 text-green-600'
+          <Table
+            columns={[
+              {
+                header: 'No. Order',
+                accessor: (trx) => <span className="font-mono text-xs font-bold text-primary">{trx.id}</span>
+              },
+              {
+                header: 'Waktu',
+                accessor: (trx) => <span className="text-gray-500">{trx.time}</span>
+              },
+              {
+                header: 'Kasir',
+                accessor: (trx) => <span className="font-bold text-dark">{trx.cashier}</span>
+              },
+              {
+                header: 'Metode',
+                accessor: (trx) => (
+                  <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${trx.method === 'QRIS'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'bg-green-50 text-green-600'
                     }`}>
-                      {trx.method}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right font-bold text-dark">{formatRupiah(trx.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {trx.method}
+                  </span>
+                )
+              },
+              {
+                header: 'Total',
+                className: 'text-right',
+                cellClassName: 'text-right',
+                accessor: (trx) => <span className="font-bold text-dark">{formatRupiah(trx.total)}</span>
+              }
+            ]}
+            data={filteredTransactions}
+            keyExtractor={(trx) => trx.id}
+          />
         </div>
       </div>
     </DashboardLayout>

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { Table } from '../../components/Table'
 
 export function DashboardOverview() {
   return (
@@ -70,87 +71,94 @@ export function DashboardOverview() {
           </div>
 
           {/* Table Container */}
-          <div className="bg-white rounded-2xl shadow-card overflow-hidden border border-gray-100">
-            <div className="overflow-x-auto custom-scroll">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100">
-                    <th className="p-4 font-semibold">ID Pesanan</th>
-                    <th className="p-4 font-semibold">Menu</th>
-                    <th className="p-4 font-semibold">Total</th>
-                    <th className="p-4 font-semibold">Status</th>
-                    <th className="p-4 font-semibold text-center">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm divide-y divide-gray-100">
-                  {/* Row 1 */}
-                  <tr className="hover:bg-[#F7F5F2] transition-colors group">
-                    <td className="p-4 font-medium text-primary">#ORD-0092</td>
-                    <td className="p-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-dark">Meja 4</span>
-                        <span className="text-xs text-gray-500">2x Ayam Bakar, 2x Es Teh</span>
-                      </div>
-                    </td>
-                    <td className="p-4 font-bold text-dark">Rp 48.000</td>
-                    <td className="p-4">
-                      <span className="bg-[#FFF0EB] text-accent px-2.5 py-1 rounded-full text-xs font-bold">Baru</span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <button className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors" title="Terima">
-                        <i className="fa-solid fa-check"></i>
-                      </button>
-                      <button className="text-red-400 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Tolak">
-                        <i className="fa-solid fa-xmark"></i>
-                      </button>
-                    </td>
-                  </tr>
-
-                  {/* Row 2 */}
-                  <tr className="hover:bg-[#F7F5F2] transition-colors group">
-                    <td className="p-4 font-medium text-gray-500">#ORD-0091</td>
-                    <td className="p-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-dark">Bungkus (Dani)</span>
-                        <span className="text-xs text-gray-500">1x Nasi Goreng Spesial</span>
-                      </div>
-                    </td>
-                    <td className="p-4 font-bold text-dark">Rp 25.000</td>
-                    <td className="p-4">
-                      <span className="bg-yellow-50 text-yellow-600 px-2.5 py-1 rounded-full text-xs font-bold">Dimasak</span>
-                    </td>
-                    <td className="p-4 text-center">
+          <Table
+            columns={[
+              {
+                header: 'ID Pesanan',
+                accessor: (item) => <span className={`font-medium ${item.id === '#ORD-0092' ? 'text-primary' : 'text-gray-500'}`}>{item.id}</span>
+              },
+              {
+                header: 'Menu',
+                accessor: (item) => (
+                  <div className="flex flex-col">
+                    <span className="font-bold text-dark">{item.table}</span>
+                    <span className="text-xs text-gray-500">{item.items}</span>
+                  </div>
+                )
+              },
+              {
+                header: 'Total',
+                accessor: (item) => <span className="font-bold text-dark">{item.total}</span>
+              },
+              {
+                header: 'Status',
+                accessor: (item) => {
+                  if (item.status === 'Baru') {
+                    return <span className="bg-[#FFF0EB] text-accent px-2.5 py-1 rounded-full text-xs font-bold">Baru</span>
+                  } else if (item.status === 'Dimasak') {
+                    return <span className="bg-yellow-50 text-yellow-600 px-2.5 py-1 rounded-full text-xs font-bold">Dimasak</span>
+                  } else {
+                    return <span className="bg-green-50 text-green-600 px-2.5 py-1 rounded-full text-xs font-bold">Selesai</span>
+                  }
+                }
+              },
+              {
+                header: 'Aksi',
+                className: 'text-center',
+                cellClassName: 'text-center',
+                accessor: (item) => {
+                  if (item.status === 'Baru') {
+                    return (
+                      <>
+                        <button className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors" title="Terima">
+                          <i className="fa-solid fa-check"></i>
+                        </button>
+                        <button className="text-red-400 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Tolak">
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      </>
+                    )
+                  } else if (item.status === 'Selesai') {
+                    return <i className="fa-solid fa-check-double text-green-600 text-xs"></i>
+                  } else {
+                    return (
                       <button className="text-gray-400 hover:text-primary transition-colors text-xs font-bold border border-gray-200 px-3 py-1 rounded-lg hover:border-primary">
                         Detail
                       </button>
-                    </td>
-                  </tr>
-
-                  {/* Row 3 */}
-                  <tr className="hover:bg-[#F7F5F2] transition-colors group">
-                    <td className="p-4 font-medium text-gray-500">#ORD-0090</td>
-                    <td className="p-4">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-dark">Meja 2</span>
-                        <span className="text-xs text-gray-500">3x Kopi Susu Gula Aren</span>
-                      </div>
-                    </td>
-                    <td className="p-4 font-bold text-dark">Rp 54.000</td>
-                    <td className="p-4">
-                      <span className="bg-green-50 text-green-600 px-2.5 py-1 rounded-full text-xs font-bold">Selesai</span>
-                    </td>
-                    <td className="p-4 text-center">
-                      <i className="fa-solid fa-check-double text-green-600 text-xs"></i>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="p-4 border-t border-gray-100 text-center">
-              <Link to="/dashboard/orders" className="text-sm text-gray-500 hover:text-primary font-medium transition-colors">
-                Lihat semua pesanan hari ini <i className="fa-solid fa-chevron-right text-xs ml-1"></i>
-              </Link>
-            </div>
+                    )
+                  }
+                }
+              }
+            ]}
+            data={[
+              {
+                id: '#ORD-0092',
+                table: 'Meja 4',
+                items: '2x Ayam Bakar, 2x Es Teh',
+                total: 'Rp 48.000',
+                status: 'Baru'
+              },
+              {
+                id: '#ORD-0091',
+                table: 'Bungkus (Dani)',
+                items: '1x Nasi Goreng Spesial',
+                total: 'Rp 25.000',
+                status: 'Dimasak'
+              },
+              {
+                id: '#ORD-0090',
+                table: 'Meja 2',
+                items: '3x Kopi Susu Gula Aren',
+                total: 'Rp 54.000',
+                status: 'Selesai'
+              }
+            ]}
+            keyExtractor={(item) => item.id}
+          />
+          <div className="p-4 border-t border-gray-100 text-center bg-white rounded-b-2xl shadow-card -mt-4 relative z-10">
+            <Link to="/dashboard/orders" className="text-sm text-gray-500 hover:text-primary font-medium transition-colors">
+              Lihat semua pesanan hari ini <i className="fa-solid fa-chevron-right text-xs ml-1"></i>
+            </Link>
           </div>
 
           {/* Analytics Chart Placeholder */}

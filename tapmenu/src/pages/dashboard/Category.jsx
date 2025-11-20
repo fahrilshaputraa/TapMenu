@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Modal } from '../../components/Modal'
+import { Table } from '../../components/Table'
 
 export function Category() {
     // --- DATA ---
@@ -129,82 +130,86 @@ export function Category() {
                         </div>
 
                         {/* Category Table */}
-                        <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-50/50 border-b border-gray-100">
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">Nama Kategori</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tipe</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Jumlah Item</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {filteredCategories.map(cat => (
-                                        <tr key={cat.id} className={`hover:bg-gray-50 transition-colors group ${!cat.active ? 'opacity-50 bg-gray-50' : ''}`}>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-primary shadow-sm">
-                                                        <i className={`fa-solid ${cat.icon}`}></i>
-                                                    </div>
-                                                    <div className="font-bold text-dark text-sm">{cat.name}</div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {cat.type === 'menu' ? (
-                                                    <span className="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Menu</span>
-                                                ) : (
-                                                    <span className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Meja</span>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md text-xs font-bold border border-gray-200">{cat.count} Item</span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="relative inline-block w-9 align-middle select-none">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={cat.active}
-                                                            onChange={() => toggleStatus(cat.id)}
-                                                            className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
-                                                        />
-                                                        <label
-                                                            onClick={() => toggleStatus(cat.id)}
-                                                            className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-300 ${cat.active ? 'bg-primary' : 'bg-gray-300'}`}
-                                                        ></label>
-                                                    </div>
-                                                    {cat.active ? (
-                                                        <span className="text-green-600 font-bold text-xs">Aktif</span>
-                                                    ) : (
-                                                        <span className="text-gray-400 font-bold text-xs">Nonaktif</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                        onClick={() => editCategory(cat)}
-                                                        className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm"
-                                                    >
-                                                        <i className="fa-solid fa-pen text-xs"></i>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => deleteCategory(cat.id)}
-                                                        className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm"
-                                                    >
-                                                        <i className="fa-solid fa-trash text-xs"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            {/* Empty State */}
-                            {filteredCategories.length === 0 && (
+                        {/* Category Table */}
+                        <Table
+                            columns={[
+                                {
+                                    header: 'Nama Kategori',
+                                    className: 'w-1/3',
+                                    accessor: (cat) => (
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-primary shadow-sm">
+                                                <i className={`fa-solid ${cat.icon}`}></i>
+                                            </div>
+                                            <div className="font-bold text-dark text-sm">{cat.name}</div>
+                                        </div>
+                                    )
+                                },
+                                {
+                                    header: 'Tipe',
+                                    accessor: (cat) => cat.type === 'menu' ? (
+                                        <span className="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Menu</span>
+                                    ) : (
+                                        <span className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Meja</span>
+                                    )
+                                },
+                                {
+                                    header: 'Jumlah Item',
+                                    accessor: (cat) => (
+                                        <span className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md text-xs font-bold border border-gray-200">{cat.count} Item</span>
+                                    )
+                                },
+                                {
+                                    header: 'Status',
+                                    accessor: (cat) => (
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative inline-block w-9 align-middle select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={cat.active}
+                                                    onChange={() => toggleStatus(cat.id)}
+                                                    className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
+                                                />
+                                                <label
+                                                    onClick={() => toggleStatus(cat.id)}
+                                                    className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-300 ${cat.active ? 'bg-primary' : 'bg-gray-300'}`}
+                                                ></label>
+                                            </div>
+                                            {cat.active ? (
+                                                <span className="text-green-600 font-bold text-xs">Aktif</span>
+                                            ) : (
+                                                <span className="text-gray-400 font-bold text-xs">Nonaktif</span>
+                                            )}
+                                        </div>
+                                    )
+                                },
+                                {
+                                    header: 'Aksi',
+                                    className: 'text-right',
+                                    cellClassName: 'text-right',
+                                    accessor: (cat) => (
+                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => editCategory(cat)}
+                                                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm"
+                                            >
+                                                <i className="fa-solid fa-pen text-xs"></i>
+                                            </button>
+                                            <button
+                                                onClick={() => deleteCategory(cat.id)}
+                                                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm"
+                                            >
+                                                <i className="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        </div>
+                                    )
+                                }
+                            ]}
+                            data={filteredCategories.map(cat => ({
+                                ...cat,
+                                _rowClass: !cat.active ? 'opacity-50 bg-gray-50' : ''
+                            }))}
+                            emptyState={
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
                                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-300 mb-3">
                                         <i className="fa-solid fa-tags text-2xl"></i>
@@ -212,8 +217,8 @@ export function Category() {
                                     <h3 className="text-dark font-bold text-sm">Belum ada kategori</h3>
                                     <p className="text-gray-500 text-xs mt-1">Tambahkan kategori baru.</p>
                                 </div>
-                            )}
-                        </div>
+                            }
+                        />
 
                     </div>
                 </div>

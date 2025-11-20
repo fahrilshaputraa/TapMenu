@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Modal } from '../../components/Modal'
+import { Table } from '../../components/Table'
 
 export function Orders() {
   const [orders, setOrders] = useState([
@@ -188,91 +189,92 @@ export function Orders() {
             </div>
 
             {/* Order Table */}
-            <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gray-50/50 border-b border-gray-100">
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ID Order</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Pelanggan / Meja</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-1/3">Menu</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Waktu</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Total</th>
-                    <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {filteredOrders.map(order => {
-                    let statusBadge;
-                    let rowClass = '';
-
+            <Table
+              columns={[
+                {
+                  header: 'ID Order',
+                  accessor: (order) => (
+                    <span className="font-mono text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded border border-primary/10">{order.id}</span>
+                  )
+                },
+                {
+                  header: 'Pelanggan / Meja',
+                  accessor: (order) => <div className="font-bold text-dark text-sm">{order.table}</div>
+                },
+                {
+                  header: 'Menu',
+                  className: 'w-1/3',
+                  accessor: (order) => (
+                    <div className="text-sm text-gray-600">
+                      <span className="text-dark font-bold">{order.items[0].qty}x</span> {order.items[0].name}
+                      {order.items.length > 1 && <span className="text-xs text-gray-400 italic"> +{order.items.length - 1} lainnya</span>}
+                    </div>
+                  )
+                },
+                {
+                  header: 'Waktu',
+                  accessor: (order) => (
+                    <span className="text-xs text-gray-500 font-mono flex items-center gap-1"><i className="fa-regular fa-clock"></i> {order.time}</span>
+                  )
+                },
+                {
+                  header: 'Status',
+                  accessor: (order) => {
                     if (order.status === 'new') {
-                      statusBadge = (
+                      return (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-yellow-50 text-yellow-700 border border-yellow-100">
                           <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 blink-dot"></div> Baru
                         </span>
-                      );
-                      rowClass = 'bg-yellow-50/30';
+                      )
                     } else if (order.status === 'process') {
-                      statusBadge = (
+                      return (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-100">
                           <i className="fa-solid fa-fire-burner"></i> Dimasak
                         </span>
-                      );
+                      )
                     } else if (order.status === 'ready') {
-                      statusBadge = (
+                      return (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-green-50 text-green-700 border border-green-100">
                           <i className="fa-solid fa-bell-concierge"></i> Siap
                         </span>
-                      );
+                      )
                     } else {
-                      statusBadge = (
+                      return (
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-gray-100 text-gray-500 border border-gray-200">
                           <i className="fa-solid fa-check"></i> Selesai
                         </span>
-                      );
-                      rowClass = 'opacity-75 grayscale-[0.5]';
+                      )
                     }
+                  }
+                },
+                {
+                  header: 'Total',
+                  className: 'text-right',
+                  cellClassName: 'text-right',
+                  accessor: (order) => <span className="font-bold text-dark text-sm">{formatRupiah(order.total)}</span>
+                },
+                {
+                  header: 'Aksi',
+                  className: 'text-right',
+                  cellClassName: 'text-right',
+                  accessor: (order) => (
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:border-primary hover:text-primary transition-all text-xs font-bold shadow-sm"
+                    >
+                      Lihat
+                    </button>
+                  )
+                }
+              ]}
+              data={filteredOrders.map(order => {
+                let rowClass = ''
+                if (order.status === 'new') rowClass = 'bg-yellow-50/30'
+                else if (order.status === 'completed') rowClass = 'opacity-75 grayscale-[0.5]'
 
-                    return (
-                      <tr key={order.id} className={`hover:bg-gray-50 transition-colors group ${rowClass}`}>
-                        <td className="px-6 py-4">
-                          <span className="font-mono text-xs font-bold text-primary bg-primary/5 px-2 py-1 rounded border border-primary/10">{order.id}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="font-bold text-dark text-sm">{order.table}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-600">
-                            <span className="text-dark font-bold">{order.items[0].qty}x</span> {order.items[0].name}
-                            {order.items.length > 1 && <span className="text-xs text-gray-400 italic"> +{order.items.length - 1} lainnya</span>}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-xs text-gray-500 font-mono flex items-center gap-1"><i className="fa-regular fa-clock"></i> {order.time}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {statusBadge}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="font-bold text-dark text-sm">{formatRupiah(order.total)}</span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button
-                            onClick={() => setSelectedOrder(order)}
-                            className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:border-primary hover:text-primary transition-all text-xs font-bold shadow-sm"
-                          >
-                            Lihat
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-
-              {/* Empty State */}
-              {filteredOrders.length === 0 && (
+                return { ...order, _rowClass: rowClass }
+              })}
+              emptyState={
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-3">
                     <i className="fa-solid fa-clipboard-list text-2xl"></i>
@@ -280,8 +282,8 @@ export function Orders() {
                   <h3 className="text-dark font-bold text-sm">Tidak ada pesanan</h3>
                   <p className="text-gray-400 text-xs mt-1">Belum ada pesanan yang sesuai dengan filter ini.</p>
                 </div>
-              )}
-            </div>
+              }
+            />
 
           </div>
         </div>
