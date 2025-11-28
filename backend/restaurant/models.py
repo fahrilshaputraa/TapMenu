@@ -32,6 +32,10 @@ class Category(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='categories')
+    name = models.CharField(max_length=100)
+    slug = models.SlugField()
+    icon = models.CharField(max_length=50, blank=True, help_text="FontAwesome class")
 
     def __str__(self):
         return self.name
