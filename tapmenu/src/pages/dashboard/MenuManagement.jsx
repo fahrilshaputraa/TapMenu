@@ -1,57 +1,16 @@
-import { useState } from 'react'
-import { Plus, Search, Edit2, Trash2, Image, Upload, Heart, Star, Info } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Search, Edit2, Trash2, Image, Upload, Heart, Star, Info, X } from 'lucide-react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Modal } from '../../components/Modal'
 
-const categories = [
-  { id: 'all', name: 'Semua' },
-  { id: 'food', name: 'Makanan' },
-  { id: 'drink', name: 'Minuman' },
-  { id: 'snack', name: 'Cemilan' },
-]
-
-const menuCategories = [
-  { id: 'food', name: 'Makanan' },
-  { id: 'drink', name: 'Minuman' },
-  { id: 'snack', name: 'Cemilan' },
-  { id: 'dessert', name: 'Penutup' },
-]
-
-const initialMenuItems = [
-  {
-    id: 1,
-    name: 'Nasi Goreng Spesial',
-    category: 'food',
-    price: 25000,
-    stock: true,
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=300&q=80',
-    description: 'Lengkap dengan telur dan sate.',
-    discount: 0,
-    tax: 10,
-    isActive: true,
-    isFavorite: true,
-    isNew: false,
-    variants: [
-      {
-        name: 'Level Pedas',
-        type: 'radio',
-        options: [
-          { name: 'Tidak Pedas', price: 0 },
-          { name: 'Sedang', price: 0 },
-          { name: 'Pedas', price: 0 }
-        ]
-      }
-    ]
-  },
-  { id: 2, name: 'Es Teh Manis', category: 'drink', price: 5000, stock: true, image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=300&q=80', description: 'Teh asli menyegarkan.', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false, variants: [] },
-  { id: 3, name: 'Ayam Bakar Madu', category: 'food', price: 35000, stock: true, image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=300&q=80', description: 'Ayam kampung bumbu madu.', discount: 15, tax: 10, isActive: true, isFavorite: false, isNew: true, variants: [] },
-  { id: 4, name: 'Pisang Keju', category: 'snack', price: 15000, stock: true, image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a3a2b7b?auto=format&fit=crop&w=300&q=80', description: 'Pisang kepok pilihan.', discount: 0, tax: 10, isActive: true, isFavorite: false, isNew: false, variants: [] },
-]
-
 export function MenuManagement() {
-  const [menuItems, setMenuItems] = useState(initialMenuItems)
+  const [menuItems, setMenuItems] = useState([])
+  const [categories, setCategories] = useState([{ id: 'all', name: 'Semua' }])
+  const [formCategories, setFormCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [file, setFile] = useState(null)
 
   // Modal state
   const [showModal, setShowModal] = useState(false)
@@ -61,7 +20,7 @@ export function MenuManagement() {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    category: 'food',
+    category: '',
     description: '',
     price: '',
     discount: '',
@@ -75,17 +34,76 @@ export function MenuManagement() {
     variants: [],
   })
 
-  const handleDelete = (id) => {
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      const [catRes, prodRes] = await Promise.all([
+        fetch('/api/categories/'),
+        fetch('/api/products/')
+      ])
+
+      const catData = await catRes.json()
+      const prodData = await prodRes.json()
+
+      const cats = catData.results || catData
+      setFormCategories(cats)
+      setCategories([
+        { id: 'all', name: 'Semua' },
+        ...cats.map(c => ({ id: c.slug, name: c.name, dbId: c.id }))
+      ])
+
+      const products = (prodData.results || prodData).map(p => ({
+        id: p.id,
+        name: p.name,
+        category: p.category_slug,
+        categoryId: p.category,
+        price: parseFloat(p.price),
+        stock: p.stock,
+        stockAmount: p.stock_quantity,
+        image: p.image_url || p.image,
+        description: p.description,
+        discount: p.discount,
+        tax: parseFloat(p.tax),
+        isActive: p.stock,
+        isFavorite: p.is_favorite,
+        isNew: p.is_new,
+        variants: p.variants || []
+      }))
+      setMenuItems(products)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDelete = async (id) => {
     if (confirm('Apakah Anda yakin ingin menghapus menu ini?')) {
-      setMenuItems(menuItems.filter(item => item.id !== id))
+        try {
+            const response = await fetch(`/api/products/${id}/`, {
+                method: 'DELETE'
+            })
+            if (response.ok) {
+                setMenuItems(menuItems.filter(item => item.id !== id))
+            } else {
+                alert('Gagal menghapus menu')
+            }
+        } catch (e) {
+            console.error(e)
+            alert('Gagal menghapus menu')
+        }
     }
   }
 
   const openAddModal = () => {
     setEditingItem(null)
+    setFile(null)
     setFormData({
       name: '',
-      category: 'food',
+      category: formCategories.length > 0 ? formCategories[0].id : '',
       description: '',
       price: '',
       discount: '',
@@ -104,9 +122,10 @@ export function MenuManagement() {
 
   const openEditModal = (item) => {
     setEditingItem(item)
+    setFile(null)
     setFormData({
       name: item.name,
-      category: item.category,
+      category: item.categoryId,
       description: item.description || '',
       price: String(item.price),
       discount: String(item.discount || ''),
@@ -195,21 +214,22 @@ export function MenuManagement() {
   }
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
+    const uploadedFile = e.target.files[0]
+    if (uploadedFile) {
+      if (uploadedFile.size > 2 * 1024 * 1024) {
         alert('Ukuran file maksimal 2MB')
         return
       }
+      setFile(uploadedFile)
       const reader = new FileReader()
       reader.onloadend = () => {
         setFormData({ ...formData, image: reader.result })
       }
-      reader.readAsDataURL(file)
+      reader.readAsDataURL(uploadedFile)
     }
   }
 
-  const handleSaveMenu = () => {
+  const handleSaveMenu = async () => {
     if (!formData.name || !formData.price) {
       alert('Nama menu dan harga wajib diisi!')
       return
@@ -223,32 +243,51 @@ export function MenuManagement() {
       }))
       .filter(group => group.name.trim() !== '' && group.options.length > 0)
 
-    const menuData = {
-      name: formData.name,
-      category: formData.category,
-      description: formData.description,
-      price: parseInt(formData.price),
-      discount: parseInt(formData.discount) || 0,
-      tax: parseInt(formData.tax) || 10,
-      stock: formData.trackStock ? parseInt(formData.stock) > 0 : true,
-      stockAmount: formData.trackStock ? parseInt(formData.stock) : null,
-      image: formData.image,
-      isActive: formData.isActive,
-      isFavorite: formData.isFavorite,
-      isNew: formData.isNew,
-      variants: cleanedVariants,
+    const formPayload = new FormData()
+    formPayload.append('name', formData.name)
+    formPayload.append('description', formData.description)
+    formPayload.append('price', formData.price)
+    formPayload.append('category', formData.category)
+    formPayload.append('stock', formData.isActive) // Boolean mapped to stock
+    if (formData.trackStock && formData.stock) {
+        formPayload.append('stock_quantity', formData.stock)
+    }
+    formPayload.append('discount', formData.discount || 0)
+    formPayload.append('tax', formData.tax || 10)
+    formPayload.append('is_favorite', formData.isFavorite)
+    formPayload.append('is_new', formData.isNew)
+    formPayload.append('variants', JSON.stringify(cleanedVariants))
+    // We assume restaurant ID 1 for now
+    formPayload.append('restaurant', 1)
+
+    if (file) {
+        formPayload.append('image', file)
     }
 
-    if (editingItem) {
-      setMenuItems(menuItems.map(item =>
-        item.id === editingItem.id ? { ...item, ...menuData } : item
-      ))
-    } else {
-      const newId = menuItems.length > 0 ? Math.max(...menuItems.map(m => m.id)) + 1 : 1
-      setMenuItems([...menuItems, { id: newId, ...menuData }])
-    }
+    try {
+        let response;
+        if (editingItem) {
+            response = await fetch(`/api/products/${editingItem.id}/`, {
+                method: 'PATCH',
+                body: formPayload
+            })
+        } else {
+             response = await fetch(`/api/products/`, {
+                method: 'POST',
+                body: formPayload
+            })
+        }
 
-    setShowModal(false)
+        if (response.ok) {
+            fetchData()
+            setShowModal(false)
+        } else {
+            alert('Error saving menu')
+        }
+    } catch(e) {
+        console.error(e)
+        alert('Error saving menu')
+    }
   }
 
   const calculateFinalPrice = () => {
@@ -316,7 +355,9 @@ export function MenuManagement() {
           </div>
 
           {/* Menu List (Grid) */}
-          {filteredItems.length > 0 ? (
+          {loading ? (
+            <div className="py-20 text-center text-gray-500">Loading menu...</div>
+          ) : filteredItems.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredItems.map((item) => {
                 const hasDiscount = item.discount > 0
@@ -543,7 +584,7 @@ export function MenuManagement() {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-sm font-medium"
                   >
-                    {menuCategories.map((cat) => (
+                    {formCategories.map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
                   </select>
@@ -821,6 +862,21 @@ export function MenuManagement() {
 
           </div>
         )}
+
+        <div className="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-6">
+          <button
+            onClick={() => setShowModal(false)}
+            className="px-5 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleSaveMenu}
+            className="px-5 py-2.5 rounded-xl text-sm font-bold bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
+          >
+            Simpan Menu
+          </button>
+        </div>
 
       </Modal>
 

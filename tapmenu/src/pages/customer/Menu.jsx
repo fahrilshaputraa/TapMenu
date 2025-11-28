@@ -1,92 +1,74 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 const DEFAULT_LOGO = 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png'
 const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80'
 
-const restaurantInfo = {
-  name: 'Warung Bu Dewi',
-  description: 'Warung makan dengan berbagai menu masakan Indonesia yang lezat dan terjangkau.',
-  address: 'Jl. Merdeka No. 123, Jakarta Selatan',
-  openTime: '08:00',
-  closeTime: '22:00',
-  logo: DEFAULT_LOGO,
-  banner: DEFAULT_BANNER,
-}
-
-const categories = [
-  { id: 'all', name: 'Semua', icon: 'fa-solid fa-border-all' },
-  { id: 'makanan', name: 'Makanan', icon: 'fa-solid fa-utensils' },
-  { id: 'minuman', name: 'Minuman', icon: 'fa-solid fa-mug-hot' },
-  { id: 'cemilan', name: 'Cemilan', icon: 'fa-solid fa-cookie-bite' },
-]
-
-const menuItems = [
-  {
-    id: 1,
-    name: "Nasi Goreng Spesial",
-    description: "Dengan telur mata sapi, sate ayam, dan kerupuk udang.",
-    price: 25000,
-    stock: true,
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80",
-    category: "makanan",
-    popular: true,
-  },
-  {
-    id: 2,
-    name: "Ayam Bakar Madu",
-    description: "Ayam kampung bakar dengan olesan madu dan sambal terasi.",
-    price: 28000,
-    stock: true,
-    image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=400&q=80",
-    category: "makanan",
-    popular: false,
-  },
-  {
-    id: 3,
-    name: "Sate Ayam Madura",
-    description: "10 tusuk sate ayam dengan bumbu kacang kental.",
-    price: 30000,
-    stock: true,
-    image: "https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=400&q=80",
-    category: "makanan",
-    popular: true,
-  },
-  {
-    id: 4,
-    name: "Es Kopi Susu Gula Aren",
-    description: "Kopi arabika house blend dengan susu fresh milk.",
-    price: 18000,
-    stock: true,
-    image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=400&q=80",
-    category: "minuman",
-    popular: false,
-  },
-  {
-    id: 5,
-    name: "Es Teh Manis Jumbo",
-    description: "Teh tubruk wangi melati dengan gula asli.",
-    price: 8000,
-    stock: true,
-    image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=400&q=80",
-    category: "minuman",
-    popular: false,
-  },
-  {
-    id: 6,
-    name: "Pisang Goreng Keju",
-    description: "Pisang kepok kuning digoreng crispy topping keju.",
-    price: 15000,
-    stock: true,
-    image: "https://images.unsplash.com/photo-1519708227418-c8fd9a3a2b7b?auto=format&fit=crop&w=400&q=80",
-    category: "cemilan",
-    popular: false,
-  }
-]
-
 export function CustomerMenu() {
   const { tableId } = useParams()
   const navigate = useNavigate()
+
+  const [restaurantInfo, setRestaurantInfo] = useState({
+    name: 'Loading...',
+    description: '',
+    address: '',
+    openTime: '',
+    closeTime: '',
+    logo: DEFAULT_LOGO,
+    banner: DEFAULT_BANNER,
+  })
+  const [categories, setCategories] = useState([])
+  const [menuItems, setMenuItems] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/restaurants/warung-bu-dewi/')
+        if (!response.ok) throw new Error('Failed to fetch data')
+        const data = await response.json()
+
+        setRestaurantInfo({
+          name: data.name,
+          description: data.description,
+          address: data.address,
+          openTime: data.open_time,
+          closeTime: data.close_time,
+          logo: data.logo_url || data.logo || DEFAULT_LOGO,
+          banner: data.banner_url || data.banner || DEFAULT_BANNER,
+        })
+
+        const fetchedCategories = data.categories.map(c => ({
+            id: c.slug,
+            name: c.name,
+            icon: c.icon
+        }))
+        setCategories([
+            { id: 'all', name: 'Semua', icon: 'fa-solid fa-border-all' },
+            ...fetchedCategories
+        ])
+
+        const fetchedProducts = data.products.map(p => ({
+            id: p.id,
+            name: p.name,
+            description: p.description,
+            price: parseFloat(p.price),
+            stock: p.stock,
+            image: p.image_url || p.image,
+            category: p.category_slug,
+            popular: p.is_popular
+        }))
+        setMenuItems(fetchedProducts)
+
+      } catch (error) {
+        console.error("Error fetching menu:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [cart, setCart] = useState([])
@@ -309,7 +291,11 @@ export function CustomerMenu() {
 
           {/* Menu List */}
           <main className="px-5 pt-4 pb-28 md:pb-36 grid grid-cols-1 gap-4" id="menu-container">
-            {filteredItems.length === 0 ? (
+            {loading ? (
+              <div className="col-span-full text-center text-gray-500 text-sm py-12">
+                Loading menu...
+              </div>
+            ) : filteredItems.length === 0 ? (
               <div className="col-span-full text-center text-gray-500 text-sm py-12 bg-white rounded-2xl border border-dashed border-gray-200">
                 Menu tidak ditemukan untuk pencarian atau kategori ini.
               </div>
