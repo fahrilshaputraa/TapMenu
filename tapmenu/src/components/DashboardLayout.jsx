@@ -23,9 +23,9 @@ export function DashboardLayout({ children }) {
     <div className="min-h-screen bg-[#F7F5F2] flex fade-in">
 
       {/* SIDEBAR (Desktop) */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex-col transition-transform duration-300 md:translate-x-0 md:static md:flex ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col overflow-hidden md:h-screen transition-transform duration-300 md:translate-x-0 md:static ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {/* Brand */}
-        <div className="p-6 flex items-center gap-3 border-b border-gray-100">
+        <div className="p-6 flex items-center gap-3 border-b border-gray-100 shrink-0">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-sm">
             <i className="fa-solid fa-utensils text-xs"></i>
           </div>
@@ -41,7 +41,7 @@ export function DashboardLayout({ children }) {
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scroll min-h-0">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Utama</div>
 
           <Link to="/dashboard" className={navLinkClass('/dashboard')}>
@@ -59,6 +59,12 @@ export function DashboardLayout({ children }) {
           </Link>
           <Link to="/dashboard/tables" className={navLinkClass('/dashboard/tables')}>
             <i className="fa-solid fa-chair w-5"></i> Meja
+          </Link>
+
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3 px-2">Promosi</div>
+
+          <Link to="/dashboard/vouchers" className={navLinkClass('/dashboard/vouchers')}>
+            <i className="fa-solid fa-ticket w-5"></i> Voucher & Diskon
           </Link>
 
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3 px-2">Keuangan</div>
@@ -90,7 +96,7 @@ export function DashboardLayout({ children }) {
         </div>
 
         {/* User Profile Bottom */}
-        <div className="p-4 border-t border-gray-100 relative">
+        <div className="p-4 border-t border-gray-100 relative shrink-0">
           <div
             onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
             className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 const DEFAULT_LOGO = 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png'
 const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80'
@@ -15,10 +15,10 @@ const restaurantInfo = {
 }
 
 const categories = [
-  { id: 'all', name: 'Semua' },
-  { id: 'food', name: 'Makanan Berat' },
-  { id: 'drink', name: 'Minuman' },
-  { id: 'snack', name: 'Cemilan' },
+  { id: 'all', name: 'Semua', icon: 'fa-solid fa-border-all' },
+  { id: 'makanan', name: 'Makanan', icon: 'fa-solid fa-utensils' },
+  { id: 'minuman', name: 'Minuman', icon: 'fa-solid fa-mug-hot' },
+  { id: 'cemilan', name: 'Cemilan', icon: 'fa-solid fa-cookie-bite' },
 ]
 
 const menuItems = [
@@ -29,7 +29,8 @@ const menuItems = [
     price: 25000,
     stock: true,
     image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80",
-    category: "food"
+    category: "makanan",
+    popular: true,
   },
   {
     id: 2,
@@ -38,7 +39,8 @@ const menuItems = [
     price: 28000,
     stock: true,
     image: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=400&q=80",
-    category: "food"
+    category: "makanan",
+    popular: false,
   },
   {
     id: 3,
@@ -47,7 +49,8 @@ const menuItems = [
     price: 30000,
     stock: true,
     image: "https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=400&q=80",
-    category: "food"
+    category: "makanan",
+    popular: true,
   },
   {
     id: 4,
@@ -56,7 +59,8 @@ const menuItems = [
     price: 18000,
     stock: true,
     image: "https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=400&q=80",
-    category: "drink"
+    category: "minuman",
+    popular: false,
   },
   {
     id: 5,
@@ -65,7 +69,8 @@ const menuItems = [
     price: 8000,
     stock: true,
     image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=400&q=80",
-    category: "drink"
+    category: "minuman",
+    popular: false,
   },
   {
     id: 6,
@@ -74,26 +79,34 @@ const menuItems = [
     price: 15000,
     stock: true,
     image: "https://images.unsplash.com/photo-1519708227418-c8fd9a3a2b7b?auto=format&fit=crop&w=400&q=80",
-    category: "snack"
+    category: "cemilan",
+    popular: false,
   }
 ]
 
 export function CustomerMenu() {
   const { tableId } = useParams()
+  const navigate = useNavigate()
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [showSearch, setShowSearch] = useState(false)
   const [cart, setCart] = useState([])
   const [showCart, setShowCart] = useState(false)
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
+  const [isFavorite, setIsFavorite] = useState(false)
 
   const tableName = tableId ? `Meja ${tableId}` : 'Bawa Pulang'
   const bannerImage = restaurantInfo.banner || DEFAULT_BANNER
   const logoImage = restaurantInfo.logo || DEFAULT_LOGO
 
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+
   const filteredItems = menuItems.filter(item => {
     if (selectedCategory !== 'all' && item.category !== selectedCategory) return false
-    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    if (normalizedQuery) {
+      const haystack = `${item.name} ${item.description}`.toLowerCase()
+      if (!haystack.includes(normalizedQuery)) return false
+    }
     return true
   })
 
@@ -149,124 +162,295 @@ export function CustomerMenu() {
     window.location.reload()
   }
 
+  const goToOrderTracking = () => {
+    setShowSidebar(false)
+    navigate('/order/status')
+  }
+
+  const goToVoucherPage = () => {
+    setShowSidebar(false)
+    navigate('/order/vouchers')
+  }
+
+  const goToOrderHistory = () => {
+    setShowSidebar(false)
+    navigate('/order/history')
+  }
+
+  const goToFavorites = () => {
+    setShowSidebar(false)
+    navigate('/order/favorites')
+  }
+
+  const goToAbout = () => {
+    setShowSidebar(false)
+    navigate('/order/about')
+  }
+
+  const goToRegister = () => {
+    setShowSidebar(false)
+    navigate('/customer/register')
+  }
+
   return (
-    <div id="app-view" className="min-h-screen pb-0 md:pb-32 fade-in bg-[#F7F5F2] flex flex-col">
-      <div className="flex-1 flex flex-col">
-        {/* Store Hero */}
-        <section className="bg-white pb-4">
-          <div className="relative h-40 bg-gray-200">
+    <div id="app-view" className="h-screen fade-in bg-[#F7F5F2] flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto custom-scroll">
+          {/* Store Hero */}
+          <section className="relative bg-white pb-4">
+          <div className="h-48 w-full relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
             <img
               src={bannerImage}
               alt={`${restaurantInfo.name} banner`}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-black/10"></div>
 
-            <div className="absolute left-4 -bottom-6 md:-bottom-10 w-16 h-16 md:w-24 md:h-24 bg-white rounded-full p-1 shadow-md z-10">
-              <div className="w-full h-full bg-gray-100 rounded-full overflow-hidden">
-                <img
-                  src={logoImage}
-                  alt={`${restaurantInfo.name} logo`}
-                  className="w-full h-full object-cover"
-                />
+            <div className="absolute top-4 left-4 z-20">
+              <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold border border-white/30 flex items-center gap-2">
+                <i className="fa-solid fa-circle text-green-400 text-[8px] animate-pulse"></i>
+                Buka
               </div>
+            </div>
+
+            <div className="absolute top-4 right-4 z-20 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setIsFavorite(prev => !prev)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isFavorite ? 'bg-white text-accent shadow-md' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                aria-label="Favorit"
+              >
+                <i className={`${isFavorite ? 'fa-solid' : 'fa-regular'} fa-heart text-xs`}></i>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSidebar(true)}
+                className="w-8 h-8 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                aria-label="Buka menu samping"
+              >
+                <i className="fa-solid fa-bars text-sm"></i>
+              </button>
             </div>
           </div>
 
-          <div className="pt-8 md:pt-12 px-4">
-            <h1 className="text-xl md:text-2xl font-bold leading-tight text-dark">{restaurantInfo.name}</h1>
-            <p className="text-sm text-gray-600 mt-1">{restaurantInfo.description}</p>
+          <div className="px-5 relative z-20 -mt-12 pb-4">
+            <div className="flex items-end justify-between">
+              <div className="w-20 h-20 bg-white rounded-2xl p-1 shadow-lg">
+                <img
+                  src={logoImage}
+                  alt={`${restaurantInfo.name} logo`}
+                  className="w-full h-full object-cover rounded-xl bg-gray-100"
+                />
+              </div>
+              <div className="flex items-center gap-1 bg-yellow-50 border border-yellow-100 px-3 py-1 rounded-xl">
+                <i className="fa-solid fa-star text-yellow-500 text-xs"></i>
+                <span className="text-xs font-bold text-yellow-700">4.8</span>
+                <span className="text-[10px] text-gray-400">(120+)</span>
+              </div>
+            </div>
 
-            <div className="flex flex-wrap gap-2 mt-3 text-xs text-gray-600">
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                <span className="font-bold text-dark">Buka {restaurantInfo.openTime} - {restaurantInfo.closeTime}</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
-                <i className="fa-solid fa-location-dot text-primary text-xs"></i>
-                <span>{restaurantInfo.address}</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100">
-                <i className="fa-solid fa-chair text-primary text-xs"></i>
-                <span>{tableName}</span>
+            <div className="mt-3">
+              <h1 className="text-2xl font-extrabold text-dark leading-tight">{restaurantInfo.name}</h1>
+              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{restaurantInfo.description}</p>
+
+              <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-gray-500 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <i className="fa-solid fa-location-dot text-primary"></i>
+                  {restaurantInfo.address}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <i className="fa-solid fa-clock text-primary"></i>
+                  {restaurantInfo.openTime} - {restaurantInfo.closeTime}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <i className="fa-solid fa-chair text-primary"></i>
+                  {tableName}
+                </span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Header Sticky */}
-        <header className="sticky top-0 z-40 bg-[#F7F5F2]/95 backdrop-blur-md border-b border-gray-200/50">
-          {/* Category Filter (Horizontal Scroll) */}
-          <div className="px-4 pb-3 overflow-x-auto no-scrollbar flex gap-3 py-3">
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === category.id
-                  ? 'bg-primary text-white font-bold shadow-md'
-                  : 'bg-white text-gray-500 border border-gray-200 hover:border-primary hover:text-primary'
-                  }`}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
-        </header>
+          {/* Sticky Search & Categories */}
+          <header className="sticky top-0 z-40 bg-[#F7F5F2] pt-2 border-b border-gray-200/70 backdrop-blur-md">
+            <div className="px-5 space-y-3 pb-3">
+              <div className="relative">
+                <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Cari menu favoritmu..."
+                  className="w-full bg-white border border-gray-200 pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 shadow-sm"
+                />
+              </div>
 
-        {/* Menu List Grid */}
-        <main className="px-4 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6" id="menu-container">
-          {filteredItems.map((item) => {
-            const qty = getItemQuantity(item.id)
-            return (
-              <div key={item.id} className="bg-white p-4 rounded-2xl shadow-card flex gap-4 items-center md:items-start group">
-                <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-100 rounded-xl overflow-hidden shrink-0 relative">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-dark text-lg leading-tight mb-1 truncate">{item.name}</h3>
-                  <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{item.description}</p>
-                  <div className="flex justify-between items-end">
-                    <span className="font-bold text-accent text-lg">Rp {item.price.toLocaleString('id-ID')}</span>
+              <div className="overflow-x-auto no-scrollbar flex gap-2 pb-1">
+                {categories.map((category) => {
+                  const isActive = selectedCategory === category.id
+                  return (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`cat-btn px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap border transition-all flex items-center gap-2 ${isActive
+                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/30'
+                        : 'bg-white text-gray-500 border-gray-200'
+                        }`}
+                    >
+                      {category.icon && <i className={`${category.icon} text-xs`}></i>}
+                      {category.name}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </header>
 
-                    <div className="flex items-center">
-                      {qty === 0 ? (
-                        <button
-                          onClick={() => addToCart(item)}
-                          className="w-9 h-9 bg-secondary text-primary rounded-lg flex items-center justify-center hover:bg-primary hover:text-white transition-colors shadow-sm"
-                        >
-                          <i className="fa-solid fa-plus"></i>
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-3 bg-[#F7F5F2] rounded-lg p-1 border border-gray-200">
+          {/* Menu List */}
+          <main className="px-5 pt-4 pb-28 md:pb-36 grid grid-cols-1 gap-4" id="menu-container">
+            {filteredItems.length === 0 ? (
+              <div className="col-span-full text-center text-gray-500 text-sm py-12 bg-white rounded-2xl border border-dashed border-gray-200">
+                Menu tidak ditemukan untuk pencarian atau kategori ini.
+              </div>
+            ) : (
+              filteredItems.map((item) => {
+                const qty = getItemQuantity(item.id)
+                return (
+                  <div key={item.id} className="bg-white p-3 rounded-2xl shadow-card border border-gray-50 flex gap-3 relative">
+                    <div className="w-24 h-24 bg-gray-100 rounded-xl shrink-0 overflow-hidden">
+                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <div className="flex justify-between items-start gap-2">
+                        <h3 className="font-bold text-dark text-base line-clamp-1">{item.name}</h3>
+                        {item.popular && <i className="fa-solid fa-fire text-orange-500 text-xs animate-pulse" title="Populer"></i>}
+                      </div>
+                      <p className="text-[11px] text-gray-500 leading-tight line-clamp-2 mt-1 mb-auto">{item.description}</p>
+
+                      <div className="flex justify-between items-end mt-3">
+                        <span className="font-extrabold text-dark text-sm">Rp {item.price.toLocaleString('id-ID')}</span>
+                        {qty === 0 ? (
                           <button
-                            onClick={() => updateQuantity(item.id, -1)}
-                            className="w-7 h-7 bg-white text-primary rounded flex items-center justify-center shadow-sm"
-                          >
-                            <i className="fa-solid fa-minus text-xs"></i>
-                          </button>
-                          <span className="font-bold text-dark text-sm w-2 text-center">{qty}</span>
-                          <button
-                            onClick={() => updateQuantity(item.id, 1)}
-                            className="w-7 h-7 bg-primary text-white rounded flex items-center justify-center shadow-sm"
+                            type="button"
+                            onClick={() => addToCart(item)}
+                            className="w-9 h-9 rounded-full bg-gray-100 text-primary hover:bg-primary hover:text-white flex items-center justify-center transition-colors shadow-sm border border-gray-200"
                           >
                             <i className="fa-solid fa-plus text-xs"></i>
                           </button>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="flex items-center gap-2 bg-primary text-white rounded-full px-2 py-1 shadow-md">
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, -1)}
+                              className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30"
+                            >
+                              <i className="fa-solid fa-minus text-[10px]"></i>
+                            </button>
+                            <span className="text-xs font-bold w-4 text-center">{qty}</span>
+                            <button
+                              type="button"
+                              onClick={() => updateQuantity(item.id, 1)}
+                              className="w-6 h-6 bg-white text-primary rounded-full flex items-center justify-center hover:bg-gray-100"
+                            >
+                              <i className="fa-solid fa-plus text-[10px]"></i>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )
+              })
+            )}
+          </main>
+        </div>
+      </div>
+
+      {/* Sidebar Drawer */}
+      <div className={`fixed inset-0 z-[70] transition-all duration-300 ${showSidebar ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+        <div
+          className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${showSidebar ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setShowSidebar(false)}
+        ></div>
+        <div className={`absolute top-0 right-0 w-72 max-w-full h-full bg-white shadow-2xl transform transition-transform duration-300 flex flex-col ${showSidebar ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="p-6 bg-primary text-white relative">
+            <button
+              type="button"
+              onClick={() => setShowSidebar(false)}
+              className="absolute top-4 right-4 text-white/70 hover:text-white"
+              aria-label="Tutup menu samping"
+            >
+              <i className="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div className="flex items-center gap-3 mb-1 mt-4">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl font-bold border-2 border-white/30">
+                <i className="fa-regular fa-user"></i>
               </div>
-            )
-          })}
-        </main>
+              <div>
+                <p className="text-xs text-green-100 uppercase font-bold tracking-wider">Selamat Datang</p>
+                <h3 className="font-bold text-lg">Tamu</h3>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-4 custom-scroll">
+            <nav className="space-y-1">
+              <button type="button" onClick={goToOrderTracking} className="w-full flex items-center gap-4 px-6 py-3 text-left text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors">
+                <i className="fa-solid fa-receipt w-5 text-center"></i>
+                <span className="font-bold text-sm">Cek Pesanan</span>
+              </button>
+              <button type="button" onClick={goToVoucherPage} className="w-full flex items-center gap-4 px-6 py-3 text-left text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors">
+                <i className="fa-solid fa-ticket w-5 text-center"></i>
+                <span className="font-bold text-sm">Voucher Saya</span>
+              </button>
+              <button type="button" onClick={goToOrderHistory} className="w-full flex items-center gap-4 px-6 py-3 text-left text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors">
+                <i className="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+                <span className="font-bold text-sm">Riwayat Pesanan</span>
+              </button>
+              <button type="button" onClick={goToFavorites} className="w-full flex items-center gap-4 px-6 py-3 text-left text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors">
+                <i className="fa-solid fa-heart w-5 text-center"></i>
+                <span className="font-bold text-sm">Favorit Saya</span>
+              </button>
+              <hr className="border-gray-100 my-2 mx-6" />
+              <button type="button" onClick={goToAbout} className="w-full flex items-center gap-4 px-6 py-3 text-left text-gray-600 hover:bg-gray-50 hover:text-primary transition-colors">
+                <i className="fa-solid fa-circle-info w-5 text-center"></i>
+                <span className="font-bold text-sm">Tentang Kami</span>
+              </button>
+            </nav>
+          </div>
+
+          <div className="p-6 border-t border-gray-100">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSidebar(false)
+                  navigate('/customer/login')
+                }}
+                className="py-2.5 border border-gray-200 text-gray-600 font-bold rounded-xl text-sm hover:bg-gray-50 transition-colors"
+              >
+                Masuk
+              </button>
+              <button
+                type="button"
+                onClick={goToRegister}
+                className="py-2.5 bg-primary text-white font-bold rounded-xl text-sm hover:bg-primaryLight transition-colors shadow-lg shadow-primary/20"
+              >
+                Daftar
+              </button>
+            </div>
+            <p className="text-center text-[10px] text-gray-400 mt-4">Versi 1.2.0 &copy; TapMenu</p>
+          </div>
+        </div>
       </div>
 
       {/* Floating Cart Bar */}
       {totalItems > 0 && (
         <div
           id="cart-bar"
-          className="sticky bottom-0 mt-auto z-30 px-4 pb-4 pt-4 md:fixed md:bottom-0 md:left-0 md:w-full"
+          className="sticky bottom-0 z-40 w-full px-4 pb-4 pt-4 "
         >
           <div
             className="bg-primary text-white rounded-2xl p-4 shadow-2xl flex justify-between items-center cursor-pointer"

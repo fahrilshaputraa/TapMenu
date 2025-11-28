@@ -1,8 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Home } from './pages/Home'
-import { Login } from './pages/Login'
-import { Register } from './pages/Register'
-import { ForgotPassword } from './pages/ForgotPassword'
+import { Login } from './pages/authentications/dashboard/Login'
+import { Register } from './pages/authentications/dashboard/Register'
+import { CustomerLogin } from './pages/authentications/customer/Login'
+import { CustomerRegister } from './pages/authentications/customer/Register'
+import { ForgotPassword } from './pages/authentications/ForgotPassword'
 import { DashboardOverview } from './pages/dashboard/Overview'
 import { Cashier } from './pages/dashboard/Cashier'
 import { Orders } from './pages/dashboard/Orders'
@@ -16,7 +18,13 @@ import { ProfileSettings } from './pages/dashboard/ProfileSettings'
 import { StoreSettings } from './pages/dashboard/StoreSettings'
 import { MenuAppearance } from './pages/dashboard/MenuAppearance'
 import { Employee } from './pages/dashboard/Employee'
+import { VoucherManagement } from './pages/dashboard/VoucherManagement'
 import { CustomerMenu } from './pages/customer/Menu'
+import { CustomerOrder } from './pages/customer/Order'
+import { CustomerVoucher } from './pages/customer/Voucher'
+import { CustomerOrderHistory } from './pages/customer/OrderHistory'
+import { CustomerFavorites } from './pages/customer/Favorites'
+import { CustomerAbout } from './pages/AboutMe'
 
 function App() {
   return (
@@ -25,6 +33,8 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/customer/login" element={<CustomerLogin />} />
+        <Route path="/customer/register" element={<CustomerRegister />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/dashboard" element={<DashboardOverview />} />
         <Route path="/dashboard/cashier" element={<Cashier />} />
@@ -41,8 +51,14 @@ function App() {
         <Route path="/dashboard/settings/store" element={<StoreSettings />} />
         <Route path="/dashboard/settings/appearance" element={<MenuAppearance />} />
         <Route path="/dashboard/employee" element={<Employee />} />
+        <Route path="/dashboard/vouchers" element={<VoucherManagement />} />
         <Route path="/order/:tableId" element={<CustomerMenu />} />
         <Route path="/order" element={<CustomerMenu />} />
+        <Route path="/order/status" element={<CustomerOrder />} />
+        <Route path="/order/vouchers" element={<CustomerVoucher />} />
+        <Route path="/order/history" element={<CustomerOrderHistory />} />
+        <Route path="/order/favorites" element={<CustomerFavorites />} />
+        <Route path="/order/about" element={<CustomerAbout />} />
       </Routes>
     </Router>
   )
