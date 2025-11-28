@@ -2,6 +2,14 @@ from rest_framework import serializers
 from .models import Restaurant, Category, Product
 
 class CategorySerializer(serializers.ModelSerializer):
+    count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ['id', 'restaurant', 'name', 'slug', 'icon', 'type', 'is_active', 'count']
+
+    def get_count(self, obj):
+        return obj.products.count()
     class Meta:
         model = Category
         fields = ['id', 'name', 'slug', 'icon']
@@ -11,6 +19,11 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
+        fields = [
+            'id', 'restaurant', 'name', 'description', 'price', 'stock', 'image', 'image_url',
+            'is_popular', 'category', 'category_slug',
+            'variants', 'discount', 'tax', 'stock_quantity', 'is_new', 'is_favorite'
+        ]
         fields = ['id', 'name', 'description', 'price', 'stock', 'image', 'image_url', 'is_popular', 'category', 'category_slug']
 
 class RestaurantSerializer(serializers.ModelSerializer):

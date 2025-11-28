@@ -35,3 +35,19 @@ class RestaurantAPITests(TestCase):
         self.assertEqual(response.data['name'], 'Test Resto')
         self.assertEqual(len(response.data['products']), 1)
         self.assertEqual(response.data['products'][0]['name'], 'Fried Rice')
+
+    def test_create_product_with_variants(self):
+        url = reverse('product-list')
+        data = {
+            'restaurant': self.restaurant.id,
+            'category': self.category.id,
+            'name': 'Spicy Chicken',
+            'price': 30000,
+            'variants': [{'name': 'Level', 'options': [{'name': 'Hot', 'price': 0}]}],
+            'discount': 10,
+            'is_new': True
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['variants'][0]['name'], 'Level')
+        self.assertTrue(response.data['is_new'])
