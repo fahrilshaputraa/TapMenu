@@ -50,7 +50,9 @@ const menuItems = [
 export function Cashier() {
   // Auth state
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [cashierId, setCashierId] = useState('KSR-001')
   const [pin, setPin] = useState('123456')
+  const [loginError, setLoginError] = useState('')
 
   // POS state
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -221,8 +223,11 @@ export function Cashier() {
   const change = cashReceived ? parseInt(cashReceived) - total : 0
 
   const enterPos = () => {
-    if (pin === '123456') {
+    if (cashierId.trim() === 'KSR-001' && pin === '123456') {
       setIsLoggedIn(true)
+      setLoginError('')
+    } else {
+      setLoginError('ID kasir atau PIN salah.')
     }
   }
 
@@ -238,18 +243,40 @@ export function Cashier() {
           <p className="text-dark/60 mb-8 text-sm">Shift Pagi • Warung Bu Dewi</p>
 
           <div className="space-y-4">
-            <input
-              type="password"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className="w-full bg-bg border border-dark/20 rounded-xl px-4 py-3 text-center font-bold text-lg tracking-widest focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            />
+            <div className="text-left">
+              <label className="text-xs font-semibold text-dark/60 mb-1 block">ID Kasir</label>
+              <input
+                type="text"
+                value={cashierId}
+                onChange={(e) => setCashierId(e.target.value)}
+                className="w-full bg-bg border border-dark/20 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                placeholder="mis. KSR-001"
+              />
+            </div>
+            <div className="text-left">
+              <label className="text-xs font-semibold text-dark/60 mb-1 block">PIN</label>
+              <input
+                type="password"
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\\D/g, '').slice(0, 6))}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                className="w-full bg-bg border border-dark/20 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                placeholder="••••••"
+              />
+            </div>
+            {loginError && (
+              <p className="text-sm text-accent font-semibold text-left">{loginError}</p>
+            )}
             <button
               onClick={enterPos}
               className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary/90 transition-all transform active:scale-[0.98]"
             >
               Buka Kasir
             </button>
+            <p className="text-xs text-dark/50 text-left">
+              Gunakan ID <span className="font-semibold text-primary">KSR-001</span> dan PIN <span className="font-semibold text-primary">123456</span> untuk masuk.
+            </p>
           </div>
         </div>
       </div>
