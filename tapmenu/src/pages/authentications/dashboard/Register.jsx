@@ -1,27 +1,36 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { registerOwner } from '../../../services/auth'
+import { useFormHandler } from '../../../lib/formHelpers'
+import { FormInput } from '../../../components/FormInput'
 
 export function Register() {
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate()
+  const { formData, fieldErrors, error, isSubmitting, setIsSubmitting, handleChange, handleError, resetErrors } = useFormHandler({
     businessName: '',
     ownerName: '',
+    email: '',
     phone: '',
     password: '',
   })
-  const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle register logic here
-    console.log('Register:', formData)
-    alert('Pendaftaran Berhasil! (Demo)')
-  }
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
+    resetErrors()
+    setIsSubmitting(true)
+    try {
+      await registerOwner({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.ownerName || formData.businessName,
+        phoneNumber: formData.phone,
+      })
+      navigate('/dashboard')
+    } catch (err) {
+      handleError(err, { full_name: 'ownerName', phone_number: 'phone' })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -74,70 +83,58 @@ export function Register() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <FormInput
+                label="Nama Pemilik"
+                name="ownerName"
+                value={formData.ownerName}
+                onChange={handleChange}
+                placeholder="Nama Lengkap Anda"
+                icon="fa-regular fa-user"
+                error={fieldErrors.ownerName?.[0]}
+              />
 
-              {/* Nama Pemilik */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Nama Pemilik</label>
-                <div className="relative">
-                  <i className="fa-regular fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  <input
-                    type="text"
-                    name="ownerName"
-                    value={formData.ownerName}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
-                    placeholder="Nama Lengkap Anda"
-                  />
-                </div>
-              </div>
+              <FormInput
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="owner@tapmenu.id"
+                icon="fa-regular fa-envelope"
+                error={fieldErrors.email?.[0]}
+                required
+              />
 
-              {/* Nama Usaha */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Nama Usaha (Toko/Warung)</label>
-                <div className="relative">
-                  <i className="fa-solid fa-store absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  <input
-                    type="text"
-                    name="businessName"
-                    value={formData.businessName}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
-                    placeholder="Cth: Seblak Prasmanan"
-                  />
-                </div>
-              </div>
+              <FormInput
+                label="Nama Usaha (Toko/Warung)"
+                name="businessName"
+                value={formData.businessName}
+                onChange={handleChange}
+                placeholder="Cth: Seblak Prasmanan"
+                icon="fa-solid fa-store"
+              />
 
-              {/* No WA */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Nomor WhatsApp</label>
-                <div className="relative">
-                  <i className="fa-brands fa-whatsapp absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
-                    placeholder="0812xxxx"
-                  />
-                </div>
-              </div>
+              <FormInput
+                label="Nomor WhatsApp"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="0812xxxx"
+                icon="fa-brands fa-whatsapp"
+                error={fieldErrors.phone?.[0]}
+              />
 
-              {/* Password */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Buat Password</label>
-                <div className="relative">
-                  <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
-                    placeholder="Minimal 6 karakter"
-                  />
-                </div>
-              </div>
+              <FormInput
+                label="Buat Password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Minimal 6 karakter"
+                icon="fa-solid fa-lock"
+                error={fieldErrors.password?.[0]}
+              />
 
               {/* Checkbox Terms */}
               <div className="flex items-start gap-3 pt-2">
@@ -148,10 +145,20 @@ export function Register() {
               </div>
 
               {/* Submit Button */}
-              <button type="submit" className="w-full bg-accent text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#d06a50] transition-all transform active:scale-[0.98] mt-2">
-                Daftar Sekarang
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-accent text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#d06a50] transition-all transform active:scale-[0.98] mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Mendaftar...' : 'Daftar Sekarang'}
               </button>
             </form>
+
+            {error ? (
+              <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl p-3">
+                {error}
+              </div>
+            ) : null}
 
             <p className="text-center mt-8 text-sm text-gray-600">
               Sudah punya akun?

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { logout } from '../services/auth'
 
 export function DashboardLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -138,9 +139,15 @@ export function DashboardLayout({ children }) {
               </Link>
               <div className="border-t border-gray-100 my-2"></div>
               <button
-                onClick={() => {
+                onClick={async () => {
                   setIsProfileDropdownOpen(false)
-                  navigate('/')
+                  try {
+                    await logout()
+                    navigate('/login', { replace: true })
+                  } catch (error) {
+                    console.error('Logout error:', error)
+                    navigate('/login', { replace: true })
+                  }
                 }}
                 className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors w-full"
               >

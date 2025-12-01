@@ -25,33 +25,167 @@ import { CustomerVoucher } from './pages/customer/Voucher'
 import { CustomerOrderHistory } from './pages/customer/OrderHistory'
 import { CustomerFavorites } from './pages/customer/Favorites'
 import { CustomerAbout } from './pages/AboutMe'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { PublicRoute } from './components/PublicRoute'
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/customer/login" element={<CustomerLogin />} />
-        <Route path="/customer/register" element={<CustomerRegister />} />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/customer/login"
+          element={
+            <PublicRoute>
+              <CustomerLogin />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/customer/register"
+          element={
+            <PublicRoute>
+              <CustomerRegister />
+            </PublicRoute>
+          }
+        />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/dashboard" element={<DashboardOverview />} />
-        <Route path="/dashboard/cashier" element={<Cashier />} />
-        <Route path="/dashboard/orders" element={<Orders />} />
-        <Route path="/dashboard/menu" element={<MenuManagement />} />
-        <Route path="/dashboard/category" element={<Category />} />
-        <Route path="/dashboard/settings" element={<Settings />} />
-        <Route path="/dashboard/tables" element={<Tables />} />
-        <Route path="/dashboard/tables/add" element={<TableForm />} />
-        <Route path="/dashboard/tables/edit/:id" element={<TableForm />} />
-        <Route path="/dashboard/reports" element={<Reports />} />
-        <Route path="/dashboard/settings" element={<Settings />} />
-        <Route path="/dashboard/settings/profile" element={<ProfileSettings />} />
-        <Route path="/dashboard/settings/store" element={<StoreSettings />} />
-        <Route path="/dashboard/settings/appearance" element={<MenuAppearance />} />
-        <Route path="/dashboard/employee" element={<Employee />} />
-        <Route path="/dashboard/vouchers" element={<VoucherManagement />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardOverview />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/cashier"
+          element={
+            <ProtectedRoute>
+              <Cashier />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/orders"
+          element={
+            <ProtectedRoute>
+              <Orders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/menu"
+          element={
+            <ProtectedRoute>
+              <MenuManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/category"
+          element={
+            <ProtectedRoute>
+              <Category />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/tables"
+          element={
+            <ProtectedRoute>
+              <Tables />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/tables/add"
+          element={
+            <ProtectedRoute>
+              <TableForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/tables/edit/:id"
+          element={
+            <ProtectedRoute>
+              <TableForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/reports"
+          element={
+            <ProtectedRoute>
+              <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/settings/profile"
+          element={
+            <ProtectedRoute>
+              <ProfileSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/settings/store"
+          element={
+            <ProtectedRoute>
+              <StoreSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/settings/appearance"
+          element={
+            <ProtectedRoute>
+              <MenuAppearance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/employee"
+          element={
+            <ProtectedRoute>
+              <Employee />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/vouchers"
+          element={
+            <ProtectedRoute>
+              <VoucherManagement />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/order/:tableId" element={<CustomerMenu />} />
         <Route path="/order" element={<CustomerMenu />} />
         <Route path="/order/status" element={<CustomerOrder />} />

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { login } from '../../../services/auth'
 
 const quickSteps = [
   {
@@ -23,10 +24,12 @@ export function CustomerLogin() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
-    contact: '',
+    email: '',
     accessCode: '',
     password: '',
   })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -38,9 +41,14 @@ export function CustomerLogin() {
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    console.log('Customer login attempt', formData)
-    alert('Login pelanggan masih dalam mode demo.')
-    navigate('/order')
+    setError('')
+    setIsSubmitting(true)
+    login(formData.email, formData.password || formData.accessCode || '')
+      .then(() => navigate('/order'))
+      .catch((err) => {
+        setError(err.message || 'Login gagal, gunakan email terdaftar.')
+      })
+      .finally(() => setIsSubmitting(false))
   }
 
   const handleGuestCheckout = () => {
@@ -119,22 +127,22 @@ export function CustomerLogin() {
 
           <div className="bg-white rounded-[28px] shadow-xl p-8 space-y-7 border border-gray-100">
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-1.5">
-                <label htmlFor="contact" className="text-sm font-bold text-gray-700">Nomor HP / Email</label>
-                <div className="relative">
-                  <i className="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  <input
-                    id="contact"
-                    name="contact"
-                    type="text"
-                    value={formData.contact}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-3 rounded-2xl border border-gray-200 bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100"
-                    placeholder="0812 3456 7890"
-                    required
-                  />
-                </div>
+            <div className="space-y-1.5">
+              <label htmlFor="contact" className="text-sm font-bold text-gray-700">Email (gunakan email terdaftar)</label>
+              <div className="relative">
+                <i className="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input
+                  id="contact"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-gray-200 bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100"
+                  placeholder="nama@email.com"
+                  required
+                />
               </div>
+            </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -181,7 +189,18 @@ export function CustomerLogin() {
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-primary text-white py-3.5 rounded-2xl font-bold shadow-lg hover:bg-[#15402f] transition-colors active:scale-[0.99]">Masuk &amp; Mulai Pesan</button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-primary text-white py-3.5 rounded-2xl font-bold shadow-lg hover:bg-[#15402f] transition-colors active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Memproses...' : 'Masuk & Mulai Pesan'}
+              </button>
+              {error ? (
+                <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-2xl p-3">
+                  {error}
+                </div>
+              ) : null}
             </form>
 
             <div className="relative text-center text-xs text-gray-400">

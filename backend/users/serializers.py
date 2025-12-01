@@ -1,8 +1,11 @@
+import random
+import string
+from datetime import timedelta
+
 from django.contrib.auth import authenticate
-from django.contrib.auth.forms import PasswordResetForm
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.encoding import force_str, force_bytes
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -87,34 +90,110 @@ class LogoutSerializer(serializers.Serializer):
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
+    def generate_token(self):
+        """Generate 6-digit random token."""
+        return ''.join(random.choices(string.digits, k=6))
+
     def save(self, **kwargs):
-        """Send password reset email via Django's PasswordResetForm."""
-        form = PasswordResetForm(data=self.validated_data)
-        if form.is_valid():
-            form.save(
-                request=self.context.get('request'),
-                use_https=self.context.get('use_https', False),
-                token_generator=default_token_generator,
-                from_email=None,
-                email_template_name='registration/password_reset_email.html',
-            )
-        return self.validated_data.get('email')
+        """Generate token 6 digit dan kirim ke email."""
+        email = self.validated_data.get('email')
+        try:
+            user = User.objects.get(email=email, is_active=True)
+        except User.DoesNotExist:
+            # Silent fail untuk security (tidak kasih tau email tidak ada)
+            return email
+
+        # Generate token 6 digit
+        token = self.generate_token()
+        user.reset_token = token
+        user.reset_token_created_at = timezone.now()
+        user.save(update_fields=['reset_token', 'reset_token_created_at'])
+
+        # Kirim email dengan token dan link
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?email={email}"
+        subject = 'Reset Password - TapMenu'
+        message = f"""Halo {user.full_name or user.email},
+
+Anda menerima email ini karena ada permintaan reset password untuk akun TapMenu Anda.
+
+Kode Verifikasi: {token}
+
+Kode ini berlaku selama 15 menit.
+
+Atau klik link berikut untuk langsung ke halaman reset password:
+{reset_url}
+
+Jika Anda tidak meminta reset password, abaikan email ini.
+
+Salam,
+Tim TapMenu
+"""
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+        return email
+
+
+class PasswordResetVerifyTokenSerializer(serializers.Serializer):
+    """Serializer untuk validasi token saja (step 2)."""
+    email = serializers.EmailField()
+    token = serializers.CharField(max_length=6, min_length=6)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        token = attrs.get('token')
+
+        try:
+            user = User.objects.get(email=email, is_active=True)
+        except User.DoesNotExist:
+            raise serializers.ValidationError(_('Invalid email or token.'))
+
+        # Cek apakah token ada dan cocok
+        if not user.reset_token or user.reset_token != token:
+            raise serializers.ValidationError(_('Invalid token.'))
+
+        # Cek apakah token sudah expired (15 menit)
+        if not user.reset_token_created_at:
+            raise serializers.ValidationError(_('Token has expired.'))
+
+        token_age = timezone.now() - user.reset_token_created_at
+        if token_age > timedelta(minutes=15):
+            raise serializers.ValidationError(_('Token has expired. Please request a new one.'))
+
+        attrs['user'] = user
+        return attrs
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
-    uid = serializers.CharField()
-    token = serializers.CharField()
+    """Serializer untuk reset password (step 3)."""
+    email = serializers.EmailField()
+    token = serializers.CharField(max_length=6, min_length=6)
     new_password = serializers.CharField(write_only=True, min_length=8)
 
     def validate(self, attrs):
-        try:
-            user_id = force_str(urlsafe_base64_decode(attrs['uid']))
-            user = User.objects.get(pk=user_id)
-        except (User.DoesNotExist, ValueError, TypeError, OverflowError):
-            raise serializers.ValidationError(_('Invalid reset link.'))
+        email = attrs.get('email')
+        token = attrs.get('token')
 
-        if not default_token_generator.check_token(user, attrs['token']):
-            raise serializers.ValidationError(_('Invalid or expired reset token.'))
+        try:
+            user = User.objects.get(email=email, is_active=True)
+        except User.DoesNotExist:
+            raise serializers.ValidationError(_('Invalid email or token.'))
+
+        # Cek apakah token ada dan cocok
+        if not user.reset_token or user.reset_token != token:
+            raise serializers.ValidationError(_('Invalid token.'))
+
+        # Cek apakah token sudah expired (15 menit)
+        if not user.reset_token_created_at:
+            raise serializers.ValidationError(_('Token has expired.'))
+
+        token_age = timezone.now() - user.reset_token_created_at
+        if token_age > timedelta(minutes=15):
+            raise serializers.ValidationError(_('Token has expired. Please request a new one.'))
 
         attrs['user'] = user
         return attrs
@@ -122,13 +201,8 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     def save(self, **kwargs):
         user = self.validated_data['user']
         user.set_password(self.validated_data['new_password'])
-        user.save(update_fields=['password'])
+        # Clear token setelah digunakan
+        user.reset_token = None
+        user.reset_token_created_at = None
+        user.save(update_fields=['password', 'reset_token', 'reset_token_created_at'])
         return user
-
-    @staticmethod
-    def build_token_payload(user: User) -> dict[str, str]:
-        """Helper to build uid/token pair for a user (useful for tests)."""
-        return {
-            'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-            'token': default_token_generator.make_token(user),
-        }

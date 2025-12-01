@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { registerBuyer } from '../../../services/auth'
 
 const perks = [
   {
@@ -41,6 +42,7 @@ export function CustomerRegister() {
     password: '',
     referral: '',
   })
+  const [error, setError] = useState('')
 
   useEffect(() => {
     document.title = 'Daftar Pelanggan TapMenu'
@@ -54,14 +56,23 @@ export function CustomerRegister() {
     }))
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
+    setError('')
     setIsSubmitting(true)
-    setTimeout(() => {
-      alert('Akun pelanggan demo berhasil dibuat!')
-      setIsSubmitting(false)
+    try {
+      await registerBuyer({
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName,
+        phoneNumber: formData.contact,
+      })
       navigate('/order')
-    }, 600)
+    } catch (err) {
+      setError(err.message || 'Gagal mendaftar. Pastikan email valid.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleGuestCheckout = () => {
@@ -193,7 +204,7 @@ export function CustomerRegister() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-2">Email (Opsional)</label>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Email</label>
                 <div className="relative">
                   <i className="fa-regular fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                   <input
@@ -201,6 +212,7 @@ export function CustomerRegister() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    required
                     placeholder="email@tapmenu.id"
                     className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 bg-white focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
                   />
@@ -265,6 +277,12 @@ export function CustomerRegister() {
                 {isSubmitting ? 'Mendaftar...' : 'Daftar & Mulai Pesan'}
               </button>
             </form>
+
+            {error ? (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-2xl p-3">
+                {error}
+              </div>
+            ) : null}
 
             <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-4 text-xs text-gray-500 space-y-2">
               {securityPoints.map((point) => (

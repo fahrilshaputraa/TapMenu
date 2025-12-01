@@ -1,26 +1,32 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { login } from '../../../services/auth'
+import { useFormHandler } from '../../../lib/formHelpers'
+import { FormInput } from '../../../components/FormInput'
 
 export function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
-  const [formData, setFormData] = useState({
+  const location = useLocation()
+  const redirectTo = location.state?.from?.pathname || '/dashboard'
+  const { formData, fieldErrors, error, isSubmitting, setIsSubmitting, handleChange, handleError, resetErrors } = useFormHandler({
     email: '',
     password: '',
   })
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle login logic here
-    console.log('Login:', formData)
-    alert('Ini hanya demo!')
-  }
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
+    resetErrors()
+    setIsSubmitting(true)
+    try {
+      await login(formData.email, formData.password)
+      navigate(redirectTo, { replace: true })
+    } catch (err) {
+      const errorMsg = err.message === 'Invalid credentials.' ? 'Email atau password salah.' : err.message
+      handleError({ ...err, message: errorMsg })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -73,53 +79,52 @@ export function Login() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1.5">Email / No. HP</label>
-                <div className="relative">
-                  <i className="fa-regular fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  <input
-                    type="text"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
-                    placeholder="contoh@email.com"
-                  />
-                </div>
-              </div>
+              <FormInput
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="contoh@email.com"
+                icon="fa-regular fa-envelope"
+                error={fieldErrors.email?.[0]}
+              />
 
-              {/* Password */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="block text-sm font-bold text-gray-700">Password</label>
-                  <a href="#" className="text-xs text-accent font-bold hover:underline">Lupa password?</a>
                 </div>
-                <div className="relative">
-                  <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-12 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-green-100 transition-all"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <i className={`fa-regular ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </button>
-                </div>
+                <FormInput
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  icon="fa-solid fa-lock"
+                  error={fieldErrors.password?.[0]}
+                  showPasswordToggle
+                  showPassword={showPassword}
+                  onTogglePassword={() => setShowPassword(!showPassword)}
+                />
+              </div>
+              <div className="flex justify-end">
+                 <Link to="/forgot-password" className="text-xs text-accent font-bold hover:underline">Lupa password?</Link>
               </div>
 
               {/* Submit Button */}
-              <button type="submit" className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#143326] transition-all transform active:scale-[0.98]">
-                Masuk Sekarang
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-[#143326] transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Memproses...' : 'Masuk Sekarang'}
               </button>
             </form>
+
+            {error ? (
+              <div className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl p-3">
+                {error}
+              </div>
+            ) : null}
 
             {/* Divider */}
             <div className="relative my-8">
