@@ -12,12 +12,12 @@ class UserAdmin(BaseUserAdmin):
     form = CustomUserChangeForm
     model = User
     ordering = ['email']
-    list_display = ['email', 'role', 'is_active', 'is_staff', 'last_login']
+    list_display = ['email', 'full_name', 'restaurant', 'role', 'is_active', 'is_staff', 'last_login']
     list_filter = ['role', 'is_active', 'is_staff', 'is_superuser']
     search_fields = ['email', 'full_name', 'phone_number']
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        (_('Personal info'), {'fields': ('full_name', 'phone_number', 'role')}),
+        (_('Personal info'), {'fields': ('full_name', 'phone_number', 'restaurant', 'employee_code', 'pin_code', 'role')}),
         (
             _('Permissions'),
             {
@@ -30,7 +30,7 @@ class UserAdmin(BaseUserAdmin):
                 )
             },
         ),
-        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
+        (_('Important dates'), {'fields': ('last_login', 'date_joined', 'updated_at')}),
     )
     add_fieldsets = (
         (

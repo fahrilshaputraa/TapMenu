@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   User,
   Mail,
@@ -13,9 +13,13 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { fetchMe, getRoleLabel, logout, updateMe } from '../../services/auth'
 
 export function ProfileSettings() {
   const navigate = useNavigate()
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
   const [profileData, setProfileData] = useState({
     name: 'Budi Santoso',
     email: 'budi.warung@gmail.com',
@@ -29,6 +33,31 @@ export function ProfileSettings() {
     new: '',
     confirm: '',
   })
+
+  useEffect(() => {
+    let active = true
+
+    async function loadProfile() {
+      try {
+        const user = await fetchMe()
+        if (!active) return
+        setProfileData((current) => ({
+          ...current,
+          name: user.full_name || '',
+          email: user.email || '',
+          phone: user.phone_number || '',
+          role: getRoleLabel(user.role),
+        }))
+      } catch (requestError) {
+        if (active) setError(requestError.message)
+      }
+    }
+
+    loadProfile()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const handleAvatarUpload = (e) => {
     const file = e.target.files[0]
@@ -45,12 +74,35 @@ export function ProfileSettings() {
     }
   }
 
-  const handleSave = () => {
-    alert('Profil berhasil disimpan!')
+  const handleSave = async () => {
+    if (passwords.new && passwords.new !== passwords.confirm) {
+      setError('Konfirmasi password belum sama.')
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    setIsSaving(true)
+
+    try {
+      await updateMe({
+        full_name: profileData.name,
+        email: profileData.email,
+        phone_number: profileData.phone,
+        ...(passwords.new ? { password: passwords.new } : {}),
+      })
+      setSuccess('Profil berhasil disimpan.')
+      setPasswords({ new: '', confirm: '' })
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  const handleLogout = () => {
-    navigate('/')
+  const handleLogout = async () => {
+    await logout()
+    navigate('/', { replace: true })
   }
 
   return (
@@ -66,14 +118,17 @@ export function ProfileSettings() {
           </div>
           <button
             onClick={handleSave}
+            disabled={isSaving}
             className="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg shadow-lg hover:bg-primary/90 transition-all flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            <span className="hidden sm:inline">Simpan Perubahan</span>
+            <span className="hidden sm:inline">{isSaving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
           </button>
         </div>
 
         <div className="max-w-4xl mx-auto space-y-8 fade-in">
+          {error ? <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div> : null}
+          {success ? <div className="rounded-2xl border border-green-100 bg-green-50 px-4 py-3 text-sm text-green-700">{success}</div> : null}
           {/* Profile Header Card */}
           <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
             <div className="h-32 bg-gradient-to-r from-primary to-[#2D6A4F]"></div>
@@ -102,7 +157,7 @@ export function ProfileSettings() {
                 <div className="mb-2 hidden sm:block">
                   <span className="bg-secondary text-primary px-3 py-1 rounded-full text-xs font-bold border border-green-200 inline-flex items-center gap-1">
                     <Shield className="w-3 h-3" />
-                    Owner (Pemilik)
+                    {profileData.role}
                   </span>
                 </div>
               </div>

@@ -24,6 +24,12 @@ from core import views
 urlpatterns = [
     path('health/', views.health, name='health'),
     path('api/v1/auth/', include('users.urls', namespace='users')),
+    path('api/v1/restaurants/', include('restaurants.urls', namespace='restaurants')),
+    path('api/v1/catalogs/', include('catalogs.urls', namespace='catalogs')),
+    path('api/v1/settings/', include('settings.urls', namespace='restaurant_settings')),
+    path('api/v1/orders/', include('orders.urls', namespace='orders')),
+    path('api/v1/payments/', include('payment.urls', namespace='payments')),
+    path('api/v1/reports/', include('reports.urls', namespace='reports')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     path('admin/', admin.site.urls),

@@ -1,324 +1,275 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Modal } from '../../components/Modal'
 import { Table } from '../../components/Table'
+import { api } from '../../services/api'
+
+const CATEGORY_ICONS = [
+  'fa-bowl-rice',
+  'fa-burger',
+  'fa-pizza-slice',
+  'fa-hotdog',
+  'fa-ice-cream',
+  'fa-mug-hot',
+  'fa-wine-glass',
+  'fa-martini-glass',
+  'fa-bottle-water',
+  'fa-utensils',
+  'fa-percent',
+  'fa-star',
+  'fa-fire',
+  'fa-leaf',
+  'fa-fish',
+]
 
 export function Category() {
-    // --- DATA ---
-    const [categories, setCategories] = useState([
-        { id: 1, name: "Makanan Berat", type: "menu", icon: "fa-bowl-rice", count: 12, active: true },
-        { id: 2, name: "Minuman", type: "menu", icon: "fa-mug-hot", count: 8, active: true },
-        { id: 3, name: "Area Indoor", type: "table", icon: "fa-house", count: 5, active: true },
-        { id: 4, name: "Area Outdoor", type: "table", icon: "fa-umbrella-beach", count: 3, active: true },
-    ])
+  const [categories, setCategories] = useState([])
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    sort_order: 0,
+    is_active: true,
+    icon: CATEGORY_ICONS[0],
+  })
 
-    const menuIcons = [
-        "fa-bowl-rice", "fa-burger", "fa-pizza-slice", "fa-hotdog", "fa-ice-cream",
-        "fa-mug-hot", "fa-wine-glass", "fa-martini-glass", "fa-bottle-water", "fa-utensils",
-        "fa-percent", "fa-star", "fa-fire", "fa-leaf", "fa-fish"
-    ]
-    const tableIcons = [
-        "fa-chair", "fa-couch", "fa-umbrella-beach", "fa-house", "fa-building",
-        "fa-users", "fa-user", "fa-crown", "fa-door-open", "fa-shop"
-    ]
+  useEffect(() => {
+    let active = true
 
-    // --- STATE ---
-    const [filter, setFilter] = useState('all')
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [editingId, setEditingId] = useState(null)
-    const [formData, setFormData] = useState({
-        name: '',
-        type: 'menu',
-        icon: menuIcons[0],
-        active: true
+    async function loadCategories() {
+      try {
+        const payload = await api.get('/api/v1/catalogs/categories/')
+        const results = Array.isArray(payload?.results) ? payload.results : payload
+        if (active) {
+          setCategories((results || []).map((category, index) => ({ ...category, icon: CATEGORY_ICONS[index % CATEGORY_ICONS.length] })))
+        }
+      } catch (requestError) {
+        if (active) setError(requestError.message)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadCategories()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const filteredCategories = useMemo(() => categories, [categories])
+
+  const toggleStatus = async (category) => {
+    try {
+      const updated = await api.patch(`/api/v1/catalogs/categories/${category.id}/`, { is_active: !category.is_active })
+      setCategories((current) => current.map((item) => (item.id === category.id ? { ...updated, icon: category.icon } : item)))
+    } catch (requestError) {
+      setError(requestError.message)
+    }
+  }
+
+  const openAddModal = () => {
+    setEditingCategory(null)
+    setFormData({
+      name: '',
+      description: '',
+      sort_order: categories.length,
+      is_active: true,
+      icon: CATEGORY_ICONS[0],
     })
+    setIsModalOpen(true)
+  }
 
-    // --- LOGIC ---
-    const filteredCategories = categories.filter(c => filter === 'all' || c.type === filter)
+  const editCategory = (category) => {
+    setEditingCategory(category)
+    setFormData({
+      name: category.name || '',
+      description: category.description || '',
+      sort_order: category.sort_order || 0,
+      is_active: category.is_active,
+      icon: category.icon || CATEGORY_ICONS[0],
+    })
+    setIsModalOpen(true)
+  }
 
-    const toggleStatus = (id) => {
-        setCategories(categories.map(c => c.id === id ? { ...c, active: !c.active } : c))
+  const saveCategory = async () => {
+    if (!formData.name) {
+      setError('Nama kategori wajib diisi.')
+      return
     }
 
-    const openAddModal = () => {
-        setEditingId(null)
-        setFormData({
-            name: '',
-            type: 'menu',
-            icon: menuIcons[0],
-            active: true
-        })
-        setIsModalOpen(true)
+    setSaving(true)
+    setError('')
+    const payload = {
+      name: formData.name,
+      description: formData.description,
+      sort_order: Number(formData.sort_order || 0),
+      is_active: formData.is_active,
     }
 
-    const editCategory = (cat) => {
-        setEditingId(cat.id)
-        setFormData({
-            name: cat.name,
-            type: cat.type,
-            icon: cat.icon,
-            active: cat.active
-        })
-        setIsModalOpen(true)
+    try {
+      if (editingCategory) {
+        const updated = await api.put(`/api/v1/catalogs/categories/${editingCategory.id}/`, payload)
+        setCategories((current) => current.map((item) => (item.id === editingCategory.id ? { ...updated, icon: formData.icon } : item)))
+      } else {
+        const created = await api.post('/api/v1/catalogs/categories/', payload)
+        setCategories((current) => [...current, { ...created, icon: formData.icon }])
+      }
+      setIsModalOpen(false)
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setSaving(false)
     }
+  }
 
-    const saveCategory = () => {
-        if (!formData.name) {
-            alert("Nama kategori wajib diisi!")
-            return
-        }
+  const deleteCategory = async (id) => {
+    if (!window.confirm('Hapus kategori ini?')) return
 
-        if (editingId) {
-            setCategories(categories.map(c => c.id === editingId ? { ...c, ...formData } : c))
-        } else {
-            const newId = categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1
-            setCategories([...categories, { id: newId, ...formData, count: 0 }])
-        }
-        setIsModalOpen(false)
+    try {
+      await api.delete(`/api/v1/catalogs/categories/${id}/`)
+      setCategories((current) => current.filter((item) => item.id !== id))
+    } catch (requestError) {
+      setError(requestError.message)
     }
+  }
 
-    const deleteCategory = (id) => {
-        if (confirm("Hapus kategori ini?")) {
-            setCategories(categories.filter(c => c.id !== id))
-        }
-    }
-
-    const handleTypeChange = (type) => {
-        const icons = type === 'menu' ? menuIcons : tableIcons
-        setFormData({ ...formData, type, icon: icons[0] })
-    }
-
-    return (
-        <DashboardLayout>
-            <div className="flex-1 flex flex-col h-full relative overflow-hidden">
-                {/* Header */}
-                <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0">
-                    <div className="flex items-center gap-4">
-                        <button className="md:hidden text-primary text-xl"><i className="fa-solid fa-bars"></i></button>
-                        <div>
-                            <h2 className="text-xl font-bold text-dark">Manajemen Kategori</h2>
-                            <p className="text-xs text-gray-500">Kelola kategori untuk Menu dan Meja</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={openAddModal}
-                        className="px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-lg shadow-lg hover:bg-primaryLight transition-all flex items-center gap-2"
-                    >
-                        <i className="fa-solid fa-plus"></i>
-                        <span className="hidden sm:inline">Tambah Kategori</span>
-                    </button>
-                </header>
-
-                {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto p-6 custom-scroll">
-                    <div className="max-w-6xl mx-auto space-y-8 fade-in">
-
-                        {/* Filter Type */}
-                        <div className="flex gap-2 border-b border-gray-200 pb-1">
-                            {['all', 'menu', 'table'].map(type => (
-                                <button
-                                    key={type}
-                                    onClick={() => setFilter(type)}
-                                    className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${filter === type
-                                        ? 'border-primary text-primary'
-                                        : 'border-transparent text-gray-500 hover:text-dark'
-                                        }`}
-                                >
-                                    {type === 'all' ? 'Semua' : type === 'menu' ? 'Menu Makanan' : 'Meja'}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Category Table */}
-                        {/* Category Table */}
-                        <Table
-                            columns={[
-                                {
-                                    header: 'Nama Kategori',
-                                    className: 'w-1/3',
-                                    accessor: (cat) => (
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-primary shadow-sm">
-                                                <i className={`fa-solid ${cat.icon}`}></i>
-                                            </div>
-                                            <div className="font-bold text-dark text-sm">{cat.name}</div>
-                                        </div>
-                                    )
-                                },
-                                {
-                                    header: 'Tipe',
-                                    accessor: (cat) => cat.type === 'menu' ? (
-                                        <span className="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Menu</span>
-                                    ) : (
-                                        <span className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Meja</span>
-                                    )
-                                },
-                                {
-                                    header: 'Jumlah Item',
-                                    accessor: (cat) => (
-                                        <span className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md text-xs font-bold border border-gray-200">{cat.count} Item</span>
-                                    )
-                                },
-                                {
-                                    header: 'Status',
-                                    accessor: (cat) => (
-                                        <div className="flex items-center gap-3">
-                                            <div className="relative inline-block w-9 align-middle select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={cat.active}
-                                                    onChange={() => toggleStatus(cat.id)}
-                                                    className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
-                                                />
-                                                <label
-                                                    onClick={() => toggleStatus(cat.id)}
-                                                    className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-300 ${cat.active ? 'bg-primary' : 'bg-gray-300'}`}
-                                                ></label>
-                                            </div>
-                                            {cat.active ? (
-                                                <span className="text-green-600 font-bold text-xs">Aktif</span>
-                                            ) : (
-                                                <span className="text-gray-400 font-bold text-xs">Nonaktif</span>
-                                            )}
-                                        </div>
-                                    )
-                                },
-                                {
-                                    header: 'Aksi',
-                                    className: 'text-right',
-                                    cellClassName: 'text-right',
-                                    accessor: (cat) => (
-                                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                onClick={() => editCategory(cat)}
-                                                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm"
-                                            >
-                                                <i className="fa-solid fa-pen text-xs"></i>
-                                            </button>
-                                            <button
-                                                onClick={() => deleteCategory(cat.id)}
-                                                className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm"
-                                            >
-                                                <i className="fa-solid fa-trash text-xs"></i>
-                                            </button>
-                                        </div>
-                                    )
-                                }
-                            ]}
-                            data={filteredCategories.map(cat => ({
-                                ...cat,
-                                _rowClass: !cat.active ? 'opacity-50 bg-gray-50' : ''
-                            }))}
-                            emptyState={
-                                <div className="flex flex-col items-center justify-center py-16 text-center">
-                                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-300 mb-3">
-                                        <i className="fa-solid fa-tags text-2xl"></i>
-                                    </div>
-                                    <h3 className="text-dark font-bold text-sm">Belum ada kategori</h3>
-                                    <p className="text-gray-500 text-xs mt-1">Tambahkan kategori baru.</p>
-                                </div>
-                            }
-                        />
-
-                    </div>
-                </div>
-
-                {/* === ADD/EDIT MODAL === */}
-                <Modal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    title={editingId ? 'Edit Kategori' : 'Tambah Kategori'}
-                    size="md"
-                >
-                    <div className="space-y-5">
-
-                        {/* Type Selection */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Tipe Kategori <span className="text-red-500">*</span></label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <label className="cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="cat-type"
-                                        value="menu"
-                                        checked={formData.type === 'menu'}
-                                        onChange={() => handleTypeChange('menu')}
-                                        className="peer sr-only"
-                                    />
-                                    <div className="border border-gray-200 rounded-xl p-3 flex flex-col items-center hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 peer-checked:text-primary transition-all">
-                                        <i className="fa-solid fa-utensils mb-1"></i>
-                                        <span className="text-xs font-bold">Menu Makanan</span>
-                                    </div>
-                                </label>
-                                <label className="cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="cat-type"
-                                        value="table"
-                                        checked={formData.type === 'table'}
-                                        onChange={() => handleTypeChange('table')}
-                                        className="peer sr-only"
-                                    />
-                                    <div className="border border-gray-200 rounded-xl p-3 flex flex-col items-center hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 peer-checked:text-primary transition-all">
-                                        <i className="fa-solid fa-chair mb-1"></i>
-                                        <span className="text-xs font-bold">Meja / Area</span>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Inputs */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Nama Kategori <span className="text-red-500">*</span></label>
-                            <input
-                                type="text"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm font-medium text-dark placeholder-gray-400"
-                                placeholder="Contoh: Makanan Berat / Indoor"
-                            />
-                        </div>
-
-                        {/* Icon Picker */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Pilih Ikon</label>
-                            <div className="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto custom-scroll p-1">
-                                {(formData.type === 'menu' ? menuIcons : tableIcons).map(icon => (
-                                    <div
-                                        key={icon}
-                                        onClick={() => setFormData({ ...formData, icon })}
-                                        className={`w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors text-gray-500 ${formData.icon === icon ? 'bg-secondary border-primary text-primary' : ''
-                                            }`}
-                                    >
-                                        <i className={`fa-solid ${icon}`}></i>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Status Toggle */}
-                        <div className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
-                            <div>
-                                <p className="text-sm font-bold text-dark">Status Aktif</p>
-                                <p className="text-[10px] text-gray-400">Tampilkan di aplikasi</p>
-                            </div>
-                            <div className="relative inline-block w-10 align-middle select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={formData.active}
-                                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                                    className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
-                                />
-                                <label
-                                    onClick={() => setFormData({ ...formData, active: !formData.active })}
-                                    className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer transition-colors duration-300 ${formData.active ? 'bg-primary' : 'bg-gray-300'}`}
-                                ></label>
-                            </div>
-                        </div>
-                    </div>
-
-                </Modal>
+  return (
+    <DashboardLayout>
+      <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+        <header className="bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0">
+          <div className="flex items-center gap-4">
+            <button className="md:hidden text-primary text-xl"><i className="fa-solid fa-bars"></i></button>
+            <div>
+              <h2 className="text-xl font-bold text-dark">Manajemen Kategori</h2>
+              <p className="text-xs text-gray-500">Kelola kategori menu yang dipakai halaman katalog</p>
             </div>
-        </DashboardLayout>
-    )
+          </div>
+          <button onClick={openAddModal} className="px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-lg shadow-lg hover:bg-primaryLight transition-all flex items-center gap-2">
+            <i className="fa-solid fa-plus"></i>
+            <span className="hidden sm:inline">Tambah Kategori</span>
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-6 custom-scroll">
+          <div className="max-w-6xl mx-auto space-y-8 fade-in">
+            {error ? <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div> : null}
+
+            <Table
+              columns={[
+                {
+                  header: 'Nama Kategori',
+                  className: 'w-1/3',
+                  accessor: (category) => (
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg border border-gray-200 bg-white flex items-center justify-center text-primary shadow-sm">
+                        <i className={`fa-solid ${category.icon}`}></i>
+                      </div>
+                      <div>
+                        <div className="font-bold text-dark text-sm">{category.name}</div>
+                        <div className="text-xs text-gray-400">{category.description || 'Tanpa deskripsi'}</div>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  header: 'Tipe',
+                  accessor: () => <span className="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-0.5 rounded text-[10px] font-bold uppercase">Menu</span>,
+                },
+                {
+                  header: 'Jumlah Item',
+                  accessor: (category) => <span className="bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md text-xs font-bold border border-gray-200">{category.menu_count || 0} Item</span>,
+                },
+                {
+                  header: 'Status',
+                  accessor: (category) => (
+                    <div className="flex items-center gap-3">
+                      <div className="relative inline-block w-9 align-middle select-none">
+                        <input type="checkbox" checked={category.is_active} onChange={() => toggleStatus(category)} className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary" />
+                        <label onClick={() => toggleStatus(category)} className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-300 ${category.is_active ? 'bg-primary' : 'bg-gray-300'}`}></label>
+                      </div>
+                      {category.is_active ? <span className="text-green-600 font-bold text-xs">Aktif</span> : <span className="text-gray-400 font-bold text-xs">Nonaktif</span>}
+                    </div>
+                  ),
+                },
+                {
+                  header: 'Aksi',
+                  className: 'text-right',
+                  cellClassName: 'text-right',
+                  accessor: (category) => (
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => editCategory(category)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm">
+                        <i className="fa-solid fa-pen text-xs"></i>
+                      </button>
+                      <button onClick={() => deleteCategory(category.id)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm">
+                        <i className="fa-solid fa-trash text-xs"></i>
+                      </button>
+                    </div>
+                  ),
+                },
+              ]}
+              data={filteredCategories.map((category) => ({ ...category, _rowClass: !category.is_active ? 'opacity-50 bg-gray-50' : '' }))}
+              isLoading={loading}
+              emptyState={
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-300 mb-3">
+                    <i className="fa-solid fa-tags text-2xl"></i>
+                  </div>
+                  <h3 className="text-dark font-bold text-sm">Belum ada kategori</h3>
+                  <p className="text-gray-500 text-xs mt-1">Tambahkan kategori baru.</p>
+                </div>
+              }
+            />
+          </div>
+        </div>
+
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingCategory ? 'Edit Kategori' : 'Tambah Kategori'} size="md">
+          <div className="space-y-5">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Nama Kategori</label>
+              <input type="text" value={formData.name} onChange={(event) => setFormData({ ...formData, name: event.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm font-medium text-dark placeholder-gray-400" placeholder="Contoh: Makanan Berat" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Deskripsi</label>
+              <textarea value={formData.description} onChange={(event) => setFormData({ ...formData, description: event.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm font-medium text-dark placeholder-gray-400" rows="3" placeholder="Deskripsi singkat kategori"></textarea>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1.5">Urutan Tampil</label>
+              <input type="number" value={formData.sort_order} onChange={(event) => setFormData({ ...formData, sort_order: event.target.value })} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary text-sm font-medium text-dark" min="0" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Pilih Ikon</label>
+              <div className="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto custom-scroll p-1">
+                {CATEGORY_ICONS.map((icon) => (
+                  <div key={icon} onClick={() => setFormData({ ...formData, icon })} className={`w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors text-gray-500 ${formData.icon === icon ? 'bg-secondary border-primary text-primary' : ''}`}>
+                    <i className={`fa-solid ${icon}`}></i>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100 cursor-pointer">
+              <div>
+                <p className="text-sm font-bold text-dark">Status Aktif</p>
+                <p className="text-[10px] text-gray-400">Tampilkan di aplikasi</p>
+              </div>
+              <input type="checkbox" checked={formData.is_active} onChange={(event) => setFormData({ ...formData, is_active: event.target.checked })} />
+            </label>
+
+            <div className="flex gap-3 pt-2">
+              <button onClick={() => setIsModalOpen(false)} className="flex-1 py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-colors">Batal</button>
+              <button onClick={saveCategory} disabled={saving} className="flex-1 py-3 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primaryLight transition-colors disabled:opacity-70">{saving ? 'Menyimpan...' : 'Simpan'}</button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    </DashboardLayout>
+  )
 }

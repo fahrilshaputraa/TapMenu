@@ -9,6 +9,7 @@ export function Login() {
   const navigate = useNavigate()
   const location = useLocation()
   const redirectTo = location.state?.from?.pathname || '/dashboard'
+  
   const { formData, fieldErrors, error, isSubmitting, setIsSubmitting, handleChange, handleError, resetErrors } = useFormHandler({
     email: '',
     password: '',

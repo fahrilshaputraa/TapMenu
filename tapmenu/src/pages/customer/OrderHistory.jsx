@@ -1,52 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-const ordersSeed = [
-  {
-    id: 'ORD-1021',
-    type: 'Dine-in',
-    table: 'Meja 4',
-    date: '24 Okt 2023',
-    time: '13:10',
-    status: 'completed',
-    total: 82000,
-    payment: 'QRIS',
-    items: [
-      { name: 'Nasi Rawon', qty: 1 },
-      { name: 'Es Kopi Susu', qty: 1 },
-    ],
-  },
-  {
-    id: 'ORD-1020',
-    type: 'Take Away',
-    table: 'Pickup',
-    date: '23 Okt 2023',
-    time: '19:25',
-    status: 'cancelled',
-    total: 45000,
-    payment: 'Tunai',
-    items: [
-      { name: 'Ayam Bakar Madu', qty: 1 },
-      { name: 'Es Teh', qty: 1 },
-    ],
-  },
-  {
-    id: 'ORD-1019',
-    type: 'Delivery',
-    table: 'JNE Express',
-    date: '22 Okt 2023',
-    time: '11:00',
-    status: 'completed',
-    total: 125000,
-    payment: 'Transfer',
-    items: [
-      { name: 'Paket Nasi Liwet', qty: 2 },
-      { name: 'Tahu Crispy', qty: 1 },
-    ],
-  },
-]
+const ORDER_HISTORY_KEY = 'tapmenu.orderHistory'
 
 const statusMap = {
+  PREPARING: { label: 'Diproses', className: 'bg-blue-100 text-blue-700' },
+  READY: { label: 'Siap', className: 'bg-indigo-100 text-indigo-700' },
+  PENDING: { label: 'Menunggu', className: 'bg-yellow-100 text-yellow-700' },
+  PAID: { label: 'Dibayar', className: 'bg-emerald-100 text-emerald-700' },
+  COMPLETED: { label: 'Selesai', className: 'bg-green-100 text-green-700' },
+  CANCELLED: { label: 'Dibatalkan', className: 'bg-red-100 text-red-600' },
   completed: { label: 'Selesai', className: 'bg-green-100 text-green-700' },
   cancelled: { label: 'Dibatalkan', className: 'bg-red-100 text-red-600' },
   pending: { label: 'Menunggu', className: 'bg-yellow-100 text-yellow-700' },
@@ -58,15 +21,21 @@ export function CustomerOrderHistory() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
+  const [orders, setOrders] = useState([])
+
+  useEffect(() => {
+    const storedOrders = JSON.parse(localStorage.getItem(ORDER_HISTORY_KEY) || '[]')
+    setOrders(storedOrders)
+  }, [])
 
   const filteredOrders = useMemo(() => {
-    return ordersSeed.filter((order) => {
-      if (tab === 'completed' && order.status !== 'completed') return false
-      if (tab === 'cancelled' && order.status !== 'cancelled') return false
-      if (query && !order.id.toLowerCase().includes(query.toLowerCase())) return false
+    return orders.filter((order) => {
+      if (tab === 'completed' && order.status !== 'COMPLETED') return false
+      if (tab === 'cancelled' && order.status !== 'CANCELLED') return false
+      if (query && !order.order_code.toLowerCase().includes(query.toLowerCase())) return false
       return true
     })
-  }, [tab, query])
+  }, [orders, tab, query])
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] pb-6 flex flex-col fade-in">
@@ -136,12 +105,12 @@ export function CustomerOrderHistory() {
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${statusInfo.className}`}>
                           {statusInfo.label}
                         </span>
-                        <h3 className="text-xl font-extrabold text-dark mt-2 leading-tight">{order.id}</h3>
-                        <p className="text-xs text-gray-500">{order.date} • {order.time}</p>
+                        <h3 className="text-xl font-extrabold text-dark mt-2 leading-tight">{order.order_code}</h3>
+                        <p className="text-xs text-gray-500">{new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(order.created_at))}</p>
                       </div>
                       <div className="text-right text-xs text-gray-500">
-                        <p className="font-bold text-dark">{order.type}</p>
-                        <p>{order.table}</p>
+                        <p className="font-bold text-dark">Dine-in</p>
+                        <p>{order.table_name || 'Meja'}</p>
                       </div>
                     </div>
 
@@ -149,8 +118,8 @@ export function CustomerOrderHistory() {
                       <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-2">Ringkasan Menu</div>
                       <ul className="space-y-1 text-sm text-gray-600">
                         {order.items.map((item) => (
-                          <li key={item.name} className="flex justify-between">
-                            <span><b className="text-dark">{item.qty}x</b> {item.name}</span>
+                          <li key={`${item.item_name}-${item.id}`} className="flex justify-between">
+                            <span><b className="text-dark">{item.quantity}x</b> {item.item_name}</span>
                           </li>
                         ))}
                       </ul>
@@ -163,7 +132,7 @@ export function CustomerOrderHistory() {
                       </div>
                       <div className="text-right">
                         <p className="text-[11px] font-bold uppercase text-gray-400">Total</p>
-                        <p className="text-lg font-extrabold text-primary">{formatRupiah(order.total)}</p>
+                        <p className="text-lg font-extrabold text-primary">{formatRupiah(Number(order.total_amount || 0))}</p>
                       </div>
                     </div>
                   </div>

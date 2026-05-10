@@ -1,18 +1,117 @@
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { Chart, registerables } from 'chart.js'
+
+Chart.register(...registerables)
+
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Table } from '../../components/Table'
+import { api } from '../../services/api'
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0))
+}
+
+function mapOrderStatus(status) {
+  if (status === 'pending') return 'Baru'
+  if (status === 'preparing' || status === 'ready') return 'Dimasak'
+  return 'Selesai'
+}
 
 export function DashboardOverview() {
+  const [summary, setSummary] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+
+    async function loadOverview() {
+      try {
+        const payload = await api.get('/api/v1/restaurants/overview/')
+        if (active) setSummary(payload)
+      } catch (requestError) {
+        if (active) setError(requestError.message)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadOverview()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const chartRef = useRef(null)
+  const chartInstance = useRef(null)
+
+  useEffect(() => {
+    if (!chartRef.current || !summary) return
+
+    if (chartInstance.current) {
+      chartInstance.current.destroy()
+    }
+
+    const ctx = chartRef.current.getContext('2d')
+    chartInstance.current = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Pesanan Selesai', 'Belum Diproses'],
+        datasets: [{
+          label: 'Jumlah Pesanan',
+          data: [summary.paid_orders || 0, summary.pending_orders || 0],
+          backgroundColor: ['#1B4332', '#d06a50'],
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } }
+        }
+      }
+    })
+
+    return () => {
+      if (chartInstance.current) {
+        chartInstance.current.destroy()
+      }
+    }
+  }, [summary])
+
+  const latestOrders = useMemo(() => {
+    return (summary?.latest_orders || []).map((order) => ({
+      id: order.order_code,
+      table: order.table__name || order.customer_name || 'Order tanpa meja',
+      items: order.status,
+      total: formatCurrency(order.total_amount),
+      status: mapOrderStatus(order.status),
+    }))
+  }, [summary])
+
   return (
     <DashboardLayout>
-      {/* STATS CARDS */}
+      {error ? (
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card 1 */}
         <div className="bg-white p-6 rounded-2xl shadow-card hover:shadow-lg transition-shadow duration-300 border-l-4 border-primary relative overflow-hidden">
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-gray-500 text-sm font-medium mb-1">Total Omzet Hari Ini</p>
-              <h3 className="text-2xl font-bold text-dark">Rp 1.250.000</h3>
+              <h3 className="text-2xl font-bold text-dark">{loading ? 'Memuat...' : formatCurrency(summary?.revenue)}</h3>
             </div>
             <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center text-primary">
               <i className="fa-solid fa-wallet"></i>
@@ -20,62 +119,58 @@ export function DashboardOverview() {
           </div>
           <div className="flex items-center gap-2 text-xs">
             <span className="text-green-600 bg-green-50 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
-              <i className="fa-solid fa-arrow-up"></i> 12%
+              <i className="fa-solid fa-circle-check"></i> {summary?.paid_orders || 0}
             </span>
-            <span className="text-gray-400">vs kemarin</span>
+            <span className="text-gray-400">pesanan sudah dibayar</span>
           </div>
         </div>
 
-        {/* Card 2 */}
         <div className="bg-white p-6 rounded-2xl shadow-card hover:shadow-lg transition-shadow duration-300 border-l-4 border-accent relative overflow-hidden">
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-gray-500 text-sm font-medium mb-1">Pesanan Masuk</p>
-              <h3 className="text-2xl font-bold text-dark">45 Pesanan</h3>
+              <h3 className="text-2xl font-bold text-dark">{loading ? 'Memuat...' : `${summary?.today_orders || 0} Pesanan`}</h3>
             </div>
             <div className="w-10 h-10 bg-[#FFF0EB] rounded-lg flex items-center justify-center text-accent">
               <i className="fa-solid fa-receipt"></i>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-accent font-bold">3 Pesanan</span>
+            <span className="text-accent font-bold">{summary?.pending_orders || 0} Pesanan</span>
             <span className="text-gray-400">Belum diproses</span>
           </div>
         </div>
 
-        {/* Card 3 */}
         <div className="bg-white p-6 rounded-2xl shadow-card hover:shadow-lg transition-shadow duration-300 border-l-4 border-blue-500 relative overflow-hidden">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-gray-500 text-sm font-medium mb-1">Menu Terjual</p>
-              <h3 className="text-2xl font-bold text-dark">128 Item</h3>
+              <p className="text-gray-500 text-sm font-medium mb-1">Aset Restoran</p>
+              <h3 className="text-2xl font-bold text-dark">{loading ? 'Memuat...' : `${summary?.menu_count || 0} Menu`}</h3>
             </div>
             <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
               <i className="fa-solid fa-bowl-food"></i>
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-gray-500"><span className="font-bold text-dark">Ayam Geprek</span> paling laris</span>
+            <span className="text-gray-500">
+              <span className="font-bold text-dark">{summary?.table_count || 0} meja</span> dan {summary?.employee_count || 0} staf aktif
+            </span>
           </div>
         </div>
       </div>
 
-      {/* MAIN CONTENT GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-        {/* LEFT COLUMN: Recent Orders (Takes 2 cols) */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-bold text-dark">Pesanan Terbaru</h3>
             <Link to="/dashboard/orders" className="text-sm text-primary font-bold hover:underline">Lihat Semua</Link>
           </div>
 
-          {/* Table Container */}
           <Table
             columns={[
               {
                 header: 'ID Pesanan',
-                accessor: (item) => <span className={`font-medium ${item.id === '#ORD-0092' ? 'text-primary' : 'text-gray-500'}`}>{item.id}</span>
+                accessor: (item) => <span className="font-medium text-primary">{item.id}</span>,
               },
               {
                 header: 'Menu',
@@ -84,119 +179,38 @@ export function DashboardOverview() {
                     <span className="font-bold text-dark">{item.table}</span>
                     <span className="text-xs text-gray-500">{item.items}</span>
                   </div>
-                )
+                ),
               },
               {
                 header: 'Total',
-                accessor: (item) => <span className="font-bold text-dark">{item.total}</span>
+                accessor: (item) => <span className="font-bold text-dark">{item.total}</span>,
               },
               {
                 header: 'Status',
                 accessor: (item) => {
                   if (item.status === 'Baru') {
                     return <span className="bg-[#FFF0EB] text-accent px-2.5 py-1 rounded-full text-xs font-bold">Baru</span>
-                  } else if (item.status === 'Dimasak') {
+                  }
+                  if (item.status === 'Dimasak') {
                     return <span className="bg-yellow-50 text-yellow-600 px-2.5 py-1 rounded-full text-xs font-bold">Dimasak</span>
-                  } else {
-                    return <span className="bg-green-50 text-green-600 px-2.5 py-1 rounded-full text-xs font-bold">Selesai</span>
                   }
-                }
+                  return <span className="bg-green-50 text-green-600 px-2.5 py-1 rounded-full text-xs font-bold">Selesai</span>
+                },
               },
-              {
-                header: 'Aksi',
-                className: 'text-center',
-                cellClassName: 'text-center',
-                accessor: (item) => {
-                  if (item.status === 'Baru') {
-                    return (
-                      <>
-                        <button className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors" title="Terima">
-                          <i className="fa-solid fa-check"></i>
-                        </button>
-                        <button className="text-red-400 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Tolak">
-                          <i className="fa-solid fa-xmark"></i>
-                        </button>
-                      </>
-                    )
-                  } else if (item.status === 'Selesai') {
-                    return <i className="fa-solid fa-check-double text-green-600 text-xs"></i>
-                  } else {
-                    return (
-                      <button className="text-gray-400 hover:text-primary transition-colors text-xs font-bold border border-gray-200 px-3 py-1 rounded-lg hover:border-primary">
-                        Detail
-                      </button>
-                    )
-                  }
-                }
-              }
             ]}
-            data={[
-              {
-                id: '#ORD-0092',
-                table: 'Meja 4',
-                items: '2x Ayam Bakar, 2x Es Teh',
-                total: 'Rp 48.000',
-                status: 'Baru'
-              },
-              {
-                id: '#ORD-0091',
-                table: 'Bungkus (Dani)',
-                items: '1x Nasi Goreng Spesial',
-                total: 'Rp 25.000',
-                status: 'Dimasak'
-              },
-              {
-                id: '#ORD-0090',
-                table: 'Meja 2',
-                items: '3x Kopi Susu Gula Aren',
-                total: 'Rp 54.000',
-                status: 'Selesai'
-              }
-            ]}
+            data={latestOrders}
             keyExtractor={(item) => item.id}
+            isLoading={loading}
           />
+
           <div className="p-4 border-t border-gray-100 text-center bg-white rounded-b-2xl shadow-card -mt-4 relative z-10">
             <Link to="/dashboard/orders" className="text-sm text-gray-500 hover:text-primary font-medium transition-colors">
               Lihat semua pesanan hari ini <i className="fa-solid fa-chevron-right text-xs ml-1"></i>
             </Link>
           </div>
-
-          {/* Analytics Chart Placeholder */}
-          <div className="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
-            <h3 className="text-lg font-bold text-dark mb-4">Grafik Penjualan (Minggu Ini)</h3>
-            <div className="relative h-48 w-full bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 border border-dashed border-gray-300">
-              {/* Simple CSS Chart Representation */}
-              <div className="flex items-end gap-3 h-32 px-6 w-full justify-between">
-                <div className="w-full bg-secondary rounded-t-md hover:bg-primary transition-colors h-[40%] relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Mon</span>
-                </div>
-                <div className="w-full bg-secondary rounded-t-md hover:bg-primary transition-colors h-[60%] relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Tue</span>
-                </div>
-                <div className="w-full bg-primary rounded-t-md hover:bg-primaryLight transition-colors h-[80%] relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Wed</span>
-                </div>
-                <div className="w-full bg-secondary rounded-t-md hover:bg-primary transition-colors h-[50%] relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Thu</span>
-                </div>
-                <div className="w-full bg-secondary rounded-t-md hover:bg-primary transition-colors h-[70%] relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Fri</span>
-                </div>
-                <div className="w-full bg-secondary rounded-t-md hover:bg-primary transition-colors h-[90%] relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Sat</span>
-                </div>
-                <div className="w-full bg-secondary rounded-t-md hover:bg-primary transition-colors h-[75%] relative group">
-                  <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">Sun</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* RIGHT COLUMN: Quick Actions & Menu (Takes 1 col) */}
         <div className="space-y-6">
-
-          {/* Quick Actions */}
           <div className="bg-primary text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
             <h3 className="font-bold text-lg mb-4 relative z-10">Aksi Cepat</h3>
@@ -205,64 +219,41 @@ export function DashboardOverview() {
                 <i className="fa-solid fa-plus-circle text-xl text-secondary"></i>
                 <span className="text-xs font-semibold">Tambah Menu</span>
               </Link>
-              <button className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+              <Link to="/dashboard/tables" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
                 <i className="fa-solid fa-print text-xl text-secondary"></i>
-                <span className="text-xs font-semibold">Cetak QR</span>
-              </button>
-              <button className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+                <span className="text-xs font-semibold">Kelola QR</span>
+              </Link>
+              <Link to="/dashboard/orders" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
                 <i className="fa-solid fa-file-invoice text-xl text-secondary"></i>
-                <span className="text-xs font-semibold">Buat Tagihan</span>
-              </button>
-              <button className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
-                <i className="fa-solid fa-store-slash text-xl text-secondary"></i>
-                <span className="text-xs font-semibold">Tutup Toko</span>
-              </button>
+                <span className="text-xs font-semibold">Pesanan</span>
+              </Link>
+              <Link to="/dashboard/settings/store" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+                <i className="fa-solid fa-store text-xl text-secondary"></i>
+                <span className="text-xs font-semibold">Profil Toko</span>
+              </Link>
             </div>
           </div>
 
-          {/* Top Menu Items */}
           <div className="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-dark">Stok Menipis</h3>
-              <i className="fa-solid fa-triangle-exclamation text-yellow-500"></i>
+              <h3 className="font-bold text-dark">Ringkasan Cepat</h3>
+              <i className="fa-solid fa-circle-info text-primary"></i>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=100&q=60" className="w-full h-full object-cover" alt="Nasi Putih" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-dark">Nasi Putih</p>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
-                    <div className="bg-red-500 h-1.5 rounded-full" style={{ width: '15%' }}></div>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-red-500">Sisa 5</span>
-              </div>
+            <div className="space-y-4 text-sm">
+              <div className="flex justify-between text-gray-500"><span>Nama Restoran</span><span className="font-bold text-dark">{summary?.restaurant_name || '-'}</span></div>
+              <div className="flex justify-between text-gray-500"><span>Status Toko</span><span className={`font-bold ${summary?.is_open ? 'text-green-600' : 'text-red-500'}`}>{summary?.is_open ? 'Buka' : 'Tutup'}</span></div>
+              <div className="flex justify-between text-gray-500"><span>Voucher Aktif</span><span className="font-bold text-dark">{summary?.voucher_count || 0}</span></div>
+              <div className="flex justify-between text-gray-500"><span>Staf Terdaftar</span><span className="font-bold text-dark">{summary?.employee_count || 0}</span></div>
+            </div>
+          </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1606313564200-e75d5e30476d?auto=format&fit=crop&w=100&q=60" className="w-full h-full object-cover" alt="Es Jeruk" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-dark">Es Jeruk</p>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
-                    <div className="bg-yellow-500 h-1.5 rounded-full" style={{ width: '40%' }}></div>
-                  </div>
-                </div>
-                <span className="text-xs font-bold text-yellow-600">Sisa 12</span>
-              </div>
+          <div className="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
+            <h3 className="font-bold text-dark mb-4">Statistik Hari Ini</h3>
+            <div className="h-48 w-full">
+              <canvas ref={chartRef}></canvas>
             </div>
-            <Link to="/dashboard/menu" className="block w-full mt-4 py-2 text-center text-xs font-bold text-primary bg-secondary/30 hover:bg-secondary rounded-lg transition-colors">
-              Kelola Stok
-            </Link>
           </div>
         </div>
-      </div>
-
-      {/* Footer Dashboard */}
-      <div className="text-center text-xs text-gray-400 pt-8 pb-4">
-        TapMenu Dashboard v1.0 &bull; <a href="#" className="hover:text-primary">Bantuan</a> &bull; <a href="#" className="hover:text-primary">Laporkan Masalah</a>
       </div>
     </DashboardLayout>
   )

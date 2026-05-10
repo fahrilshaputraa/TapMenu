@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TapMenu - Pengaturan Tampilan</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (UPDATED with Poppins & Lato) -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;600&family=Playfair+Display:wght@600&family=Poppins:wght@400;500;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1B4332',    /* Deep Emerald */
+                        primaryLight: '#2D6A4F',
+                        secondary: '#D8F3DC',  /* Mint */
+                        accent: '#E07A5F',     /* Terracotta */
+                        bg: '#F7F5F2',         /* Bone White */
+                        dark: '#2D3436',       /* Charcoal */
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                        inter: ['"Inter"', 'sans-serif'],
+                        poppins: ['"Poppins"', 'sans-serif'],
+                        lato: ['"Lato"', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 2px 12px rgba(0,0,0,0.06)',
+                        'soft': '0 4px 20px -2px rgba(0,0,0,0.05)',
+                        'phone': '0 0 0 12px #1f2937, 0 20px 50px -10px rgba(0,0,0,0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #F7F5F2; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Color Picker Radio */
+        .color-radio:checked + div {
+            ring-width: 2px;
+            ring-offset-width: 2px;
+            ring-color: currentColor;
+            transform: scale(1.1);
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: #1B4332; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #1B4332; }
+        .toggle-checkbox { right: calc(100% - 1.25rem); }
+
+        /* Patterns */
+        .pattern-dots { background-image: radial-gradient(currentColor 1px, transparent 1px); background-size: 20px 20px; color: rgba(0,0,0,0.1); }
+        .pattern-grid { background-image: linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px); background-size: 20px 20px; color: rgba(0,0,0,0.05); }
+        .pattern-none { background-image: none; }
+    </style>
+</head>
+<body class="font-sans text-dark antialiased overflow-x-hidden bg-[#F7F5F2]">
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- SIDEBAR (Desktop) -->
+        <aside class="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col z-20 shrink-0">
+            <!-- Brand -->
+            <div class="p-6 flex items-center gap-3 border-b border-gray-100">
+                <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white shadow-sm">
+                    <i class="fa-solid fa-utensils text-xs"></i>
+                </div>
+                <span class="text-lg font-extrabold text-primary tracking-tight">TapMenu</span>
+            </div>
+
+            <!-- Navigation -->
+            <div class="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scroll">
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Utama</div>
+                
+                <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 font-medium hover:bg-gray-50 hover:text-dark rounded-xl transition-colors">
+                    <i class="fa-solid fa-house w-5"></i> Dashboard
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 font-medium hover:bg-gray-50 hover:text-dark rounded-xl transition-colors">
+                    <i class="fa-solid fa-receipt w-5"></i> Pesanan
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 font-medium hover:bg-gray-50 hover:text-dark rounded-xl transition-colors">
+                    <i class="fa-solid fa-qrcode w-5"></i> Meja & QR
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 font-medium hover:bg-gray-50 hover:text-dark rounded-xl transition-colors">
+                    <i class="fa-solid fa-book-open w-5"></i> Daftar Menu
+                </a>
+
+                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mt-8 mb-3 px-2">Pengaturan</div>
+                
+                <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 font-medium hover:bg-gray-50 hover:text-dark rounded-xl transition-colors">
+                    <i class="fa-solid fa-store w-5"></i> Profil Toko
+                </a>
+                <!-- Active State -->
+                <a href="#" class="flex items-center gap-3 px-4 py-3 bg-secondary/50 text-primary font-bold rounded-xl transition-colors">
+                    <i class="fa-solid fa-palette w-5"></i> Tampilan Menu
+                </a>
+                <a href="#" class="flex items-center gap-3 px-4 py-3 text-gray-500 font-medium hover:bg-gray-50 hover:text-dark rounded-xl transition-colors">
+                    <i class="fa-solid fa-users-gear w-5"></i> Karyawan
+                </a>
+            </div>
+
+            <!-- Profile Bottom -->
+            <div class="p-4 border-t border-gray-100">
+                <div class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 cursor-pointer">
+                    <img src="https://i.pravatar.cc/100?img=5" class="w-9 h-9 rounded-full border border-gray-200">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-dark truncate">Pak Budi</p>
+                        <p class="text-xs text-gray-500 truncate">Owner</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 flex flex-col h-full relative overflow-hidden">
+            
+            <!-- Header -->
+            <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-4">
+                    <button class="md:hidden text-primary text-xl"><i class="fa-solid fa-bars"></i></button>
+                    <div>
+                        <h2 class="text-xl font-bold text-dark">Tampilan Menu</h2>
+                        <p class="text-xs text-gray-500">Kustomisasi tema halaman menu digital pelanggan</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="resetTheme()" class="hidden sm:flex px-4 py-2.5 bg-white border border-gray-200 text-gray-500 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all items-center gap-2">
+                        <i class="fa-solid fa-rotate-left"></i> 
+                        <span>Reset</span>
+                    </button>
+                    <button onclick="saveTheme()" class="px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-lg shadow-lg hover:bg-primaryLight transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Terapkan</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-6 custom-scroll">
+                <div class="max-w-7xl mx-auto h-full fade-in">
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+                        
+                        <!-- CONTROLS (Left Side) -->
+                        <div class="lg:col-span-7 space-y-6 pb-10">
+                            
+                            <!-- 1. Identitas & Konten -->
+                            <div class="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
+                                <h3 class="font-bold text-dark mb-4 flex items-center gap-2"><i class="fa-solid fa-pen-to-square text-primary"></i> Konten & Identitas</h3>
+                                <div class="space-y-4">
+                                    <!-- Nama & Deskripsi -->
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Judul / Nama Toko</label>
+                                        <input type="text" id="input-title" value="Warung Bu Dewi" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" oninput="updatePreview()">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Deskripsi Singkat</label>
+                                        <textarea id="input-desc-text" rows="2" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none" oninput="updatePreview()">Rasanya seperti masakan ibu</textarea>
+                                    </div>
+
+                                    <!-- Uploads -->
+                                    <div class="grid grid-cols-2 gap-4 pt-2">
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Logo Profil</label>
+                                            <label class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <i class="fa-solid fa-upload text-gray-400 text-xs"></i>
+                                                <span class="text-xs text-dark font-medium truncate">Pilih Foto...</span>
+                                                <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'preview-logo-img')">
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1.5">Gambar Banner</label>
+                                            <label class="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <i class="fa-solid fa-image text-gray-400 text-xs"></i>
+                                                <span class="text-xs text-dark font-medium truncate">Pilih Banner...</span>
+                                                <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'preview-banner-img')">
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Warna & Font -->
+                            <div class="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
+                                <h3 class="font-bold text-dark mb-4 flex items-center gap-2"><i class="fa-solid fa-swatchbook text-primary"></i> Warna & Font</h3>
+                                
+                                <div class="space-y-6">
+                                    <!-- Warna Aksen -->
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500 uppercase mb-3 block">Warna Aksen Toko</label>
+                                        <div class="grid grid-cols-5 sm:grid-cols-9 gap-3">
+                                            <label class="cursor-pointer text-[#1B4332]">
+                                                <input type="radio" name="theme-color" value="#1B4332" class="color-radio sr-only" checked onchange="updatePreview()">
+                                                <div class="w-8 h-8 rounded-full bg-[#1B4332] shadow-sm transition-transform border-2 border-white ring-offset-2 ring-gray-200"></div>
+                                            </label>
+                                            <label class="cursor-pointer text-[#E07A5F]">
+                                                <input type="radio" name="theme-color" value="#E07A5F" class="color-radio sr-only" onchange="updatePreview()">
+                                                <div class="w-8 h-8 rounded-full bg-[#E07A5F] shadow-sm transition-transform border-2 border-white ring-offset-2 ring-gray-200"></div>
+                                            </label>
+                                            <label class="cursor-pointer text-[#2563EB]">
+                                                <input type="radio" name="theme-color" value="#2563EB" class="color-radio sr-only" onchange="updatePreview()">
+                                                <div class="w-8 h-8 rounded-full bg-[#2563EB] shadow-sm transition-transform border-2 border-white ring-offset-2 ring-gray-200"></div>
+                                            </label>
+                                            <label class="cursor-pointer text-[#DC2626]">
+                                                <input type="radio" name="theme-color" value="#DC2626" class="color-radio sr-only" onchange="updatePreview()">
+                                                <div class="w-8 h-8 rounded-full bg-[#DC2626] shadow-sm transition-transform border-2 border-white ring-offset-2 ring-gray-200"></div>
+                                            </label>
+                                            <label class="cursor-pointer text-[#DB2777]">
+                                                <input type="radio" name="theme-color" value="#DB2777" class="color-radio sr-only" onchange="updatePreview()">
+                                                <div class="w-8 h-8 rounded-full bg-[#DB2777] shadow-sm transition-transform border-2 border-white ring-offset-2 ring-gray-200"></div>
+                                            </label>
+                                            <label class="cursor-pointer text-[#7C3AED]">
+                                                <input type="radio" name="theme-color" value="#7C3AED" class="color-radio sr-only" onchange="updatePreview()">
+                                                <div class="w-8 h-8 rounded-full bg-[#7C3AED] shadow-sm transition-transform border-2 border-white ring-offset-2 ring-gray-200"></div>
+                                            </label>
+                                            <label class="cursor-pointer text-[#111827]">
+                                                <input type="radio" name="theme-color" value="#111827" class="color-radio sr-only" onchange="updatePreview()">
+                                                <div class="w-8 h-8 rounded-full bg-[#111827] shadow-sm transition-transform border-2 border-white ring-offset-2 ring-gray-200"></div>
+                                            </label>
+                                            <label class="cursor-pointer text-[#78350F]">
+                                                <input type="radio" name="theme-color" value="#78350F" class="color-radio sr-only" onchange="updatePreview()">
+                                                <div class="w-8 h-8 rounded-full bg-[#78350F] shadow-sm transition-transform border-2 border-white ring-offset-2 ring-gray-200"></div>
+                                            </label>
+                                            
+                                            <!-- Custom Color Input -->
+                                            <div class="relative w-8 h-8 rounded-full bg-white border-2 border-dashed border-gray-300 hover:border-primary flex items-center justify-center overflow-hidden cursor-pointer group">
+                                                <input type="color" id="custom-color-input" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer" oninput="applyCustomColor(this.value)">
+                                                <div class="w-full h-full" id="custom-color-display" style="background-color: transparent;"></div>
+                                                <i class="fa-solid fa-plus text-[10px] text-gray-400 absolute pointer-events-none group-hover:text-primary" id="custom-color-icon"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="border-gray-100">
+
+                                    <!-- Font Family Selection -->
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500 uppercase mb-3 block">Jenis Font</label>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <label class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <input type="radio" name="font-style" value="Plus Jakarta Sans" class="text-primary focus:ring-primary" checked onchange="updatePreview()">
+                                                <div class="flex flex-col">
+                                                    <span class="font-sans font-bold text-sm text-dark">Modern</span>
+                                                    <span class="text-[10px] text-gray-400">Jakarta Sans</span>
+                                                </div>
+                                            </label>
+                                            <label class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <input type="radio" name="font-style" value="Inter" class="text-primary focus:ring-primary" onchange="updatePreview()">
+                                                <div class="flex flex-col">
+                                                    <span class="font-inter font-bold text-sm text-dark">Clean</span>
+                                                    <span class="text-[10px] text-gray-400">Inter</span>
+                                                </div>
+                                            </label>
+                                            <label class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <input type="radio" name="font-style" value="Poppins" class="text-primary focus:ring-primary" onchange="updatePreview()">
+                                                <div class="flex flex-col">
+                                                    <span class="font-poppins font-bold text-sm text-dark">Friendly</span>
+                                                    <span class="text-[10px] text-gray-400">Poppins</span>
+                                                </div>
+                                            </label>
+                                            <label class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                                                <input type="radio" name="font-style" value="Lato" class="text-primary focus:ring-primary" onchange="updatePreview()">
+                                                <div class="flex flex-col">
+                                                    <span class="font-lato font-bold text-sm text-dark">Professional</span>
+                                                    <span class="text-[10px] text-gray-400">Lato</span>
+                                                </div>
+                                            </label>
+                                            <label class="flex items-center gap-3 p-3 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors sm:col-span-2">
+                                                <input type="radio" name="font-style" value="Playfair Display" class="text-primary focus:ring-primary" onchange="updatePreview()">
+                                                <div class="flex flex-col">
+                                                    <span class="font-serif font-bold text-sm text-dark">Elegant (Serif)</span>
+                                                    <span class="text-[10px] text-gray-400">Playfair Display</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <!-- 3. Latar Belakang & Background Color -->
+                             <div class="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
+                                <h3 class="font-bold text-dark mb-4 flex items-center gap-2"><i class="fa-regular fa-image text-primary"></i> Latar Belakang</h3>
+                                
+                                <div class="space-y-4">
+                                    <!-- Pattern Selection -->
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="bg-pattern" value="pattern-none" class="peer sr-only" checked onchange="updatePreview()">
+                                            <div class="aspect-square border-2 border-gray-100 rounded-xl bg-[#F7F5F2] hover:bg-gray-50 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/20 transition-all flex items-center justify-center">
+                                                <span class="text-[10px] text-gray-400 font-bold">Polos</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="bg-pattern" value="pattern-dots" class="peer sr-only" onchange="updatePreview()">
+                                            <div class="aspect-square border-2 border-gray-100 rounded-xl bg-[#F7F5F2] pattern-dots hover:bg-gray-50 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/20 transition-all flex items-center justify-center">
+                                                <span class="text-[10px] text-gray-400 font-bold">Bintik</span>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="bg-pattern" value="pattern-grid" class="peer sr-only" onchange="updatePreview()">
+                                            <div class="aspect-square border-2 border-gray-100 rounded-xl bg-[#F7F5F2] pattern-grid hover:bg-gray-50 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/20 transition-all flex items-center justify-center">
+                                                <span class="text-[10px] text-gray-400 font-bold">Kotak</span>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <!-- Background Color Picker -->
+                                    <div class="flex items-center justify-between pt-2 border-t border-gray-50">
+                                        <label class="text-xs font-bold text-gray-500 uppercase">Warna Dasar Background</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" id="bg-color-input" value="#F7F5F2" class="w-8 h-8 rounded cursor-pointer border border-gray-200 p-0.5" oninput="updatePreview()">
+                                            <button onclick="resetBgColor()" class="text-xs text-primary font-bold hover:underline">Reset</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4. Layout & Header (UPDATED with Visibility Toggles) -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Layout Options -->
+                                <div class="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
+                                    <h3 class="font-bold text-dark mb-4 text-sm">Tata Letak Menu</h3>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="layout-style" value="list" class="peer sr-only" checked onchange="updatePreview()">
+                                            <div class="border-2 border-gray-100 rounded-xl p-3 hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 transition-all text-center">
+                                                <i class="fa-solid fa-list text-xl mb-2 text-gray-400 peer-checked:text-primary"></i>
+                                                <p class="text-xs font-bold text-dark">List</p>
+                                            </div>
+                                        </label>
+                                        <label class="cursor-pointer">
+                                            <input type="radio" name="layout-style" value="grid" class="peer sr-only" onchange="updatePreview()">
+                                            <div class="border-2 border-gray-100 rounded-xl p-3 hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 transition-all text-center">
+                                                <i class="fa-solid fa-border-all text-xl mb-2 text-gray-400 peer-checked:text-primary"></i>
+                                                <p class="text-xs font-bold text-dark">Grid</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Header & Banner Settings (UPDATED) -->
+                                <div class="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
+                                    <h3 class="font-bold text-dark mb-4 text-sm">Header & Banner</h3>
+                                    <div class="space-y-4">
+                                        <!-- Style Radio -->
+                                        <div class="flex gap-3">
+                                            <label class="flex-1 cursor-pointer">
+                                                <input type="radio" name="header-style" value="standard" class="peer sr-only" checked onchange="updatePreview()">
+                                                <div class="border-2 border-gray-100 rounded-xl p-3 hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 transition-all text-center">
+                                                    <p class="text-xs font-bold text-dark">Kiri</p>
+                                                </div>
+                                            </label>
+                                            <label class="flex-1 cursor-pointer">
+                                                <input type="radio" name="header-style" value="center" class="peer sr-only" onchange="updatePreview()">
+                                                <div class="border-2 border-gray-100 rounded-xl p-3 hover:bg-gray-50 peer-checked:border-primary peer-checked:bg-secondary/20 transition-all text-center">
+                                                    <p class="text-xs font-bold text-dark">Tengah</p>
+                                                </div>
+                                            </label>
+                                        </div>
+
+                                        <!-- Visibility Toggles for Header -->
+                                        <div class="flex gap-3 pt-2 border-t border-gray-50">
+                                            <div class="flex items-center gap-2">
+                                                <div class="relative inline-block w-8 align-middle select-none">
+                                                    <input type="checkbox" id="show-banner" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300" checked onchange="updatePreview()"/>
+                                                    <label for="show-banner" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300"></label>
+                                                </div>
+                                                <span class="text-[10px] font-bold text-gray-500">Banner</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <div class="relative inline-block w-8 align-middle select-none">
+                                                    <input type="checkbox" id="show-profile" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300" checked onchange="updatePreview()"/>
+                                                    <label for="show-profile" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300"></label>
+                                                </div>
+                                                <span class="text-[10px] font-bold text-gray-500">Logo</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                             <!-- 5. Isi & Gaya Kartu -->
+                            <div class="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
+                                <h3 class="font-bold text-dark mb-4 flex items-center gap-2"><i class="fa-solid fa-layer-group text-primary"></i> Isi & Gaya Kartu</h3>
+                                
+                                <div class="space-y-5">
+                                    <!-- Visibility Toggles -->
+                                    <div class="flex flex-wrap gap-4">
+                                        <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 flex-1 min-w-[140px]">
+                                            <div class="relative inline-block w-10 align-middle select-none">
+                                                <input type="checkbox" id="show-images" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300" checked onchange="updatePreview()"/>
+                                                <label for="show-images" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300"></label>
+                                            </div>
+                                            <span class="text-xs font-bold text-dark">Foto Menu</span>
+                                        </div>
+                                        <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100 flex-1 min-w-[140px]">
+                                            <div class="relative inline-block w-10 align-middle select-none">
+                                                <input type="checkbox" id="show-desc" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300" checked onchange="updatePreview()"/>
+                                                <label for="show-desc" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300"></label>
+                                            </div>
+                                            <span class="text-xs font-bold text-dark">Deskripsi</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Radius & Shadow -->
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Sudut (Radius)</label>
+                                            <input type="range" min="0" max="24" value="12" step="4" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary" id="radius-slider" oninput="updatePreview()">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Bayangan</label>
+                                            <input type="range" min="0" max="3" value="1" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary" id="shadow-slider" oninput="updatePreview()">
+                                        </div>
+                                    </div>
+
+                                    <!-- Button Style -->
+                                    <div>
+                                        <label class="text-xs font-bold text-gray-500 uppercase mb-2 block">Gaya Tombol Tambah</label>
+                                        <div class="flex gap-2">
+                                            <button onclick="setBtnStyle('circle')" class="btn-style-opt px-3 py-2 border border-gray-200 rounded-lg text-xs hover:bg-gray-50 focus:ring-2 focus:ring-primary active-btn-style" data-style="circle">Bulat</button>
+                                            <button onclick="setBtnStyle('square')" class="btn-style-opt px-3 py-2 border border-gray-200 rounded-lg text-xs hover:bg-gray-50 focus:ring-2 focus:ring-primary" data-style="square">Kotak</button>
+                                            <button onclick="setBtnStyle('pill')" class="btn-style-opt px-3 py-2 border border-gray-200 rounded-lg text-xs hover:bg-gray-50 focus:ring-2 focus:ring-primary" data-style="pill">Pill (+ Tambah)</button>
+                                        </div>
+                                        <input type="hidden" id="btn-style-input" value="circle">
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- PREVIEW (Right Side - Sticky) -->
+                        <div class="lg:col-span-5 relative hidden lg:block">
+                            <div class="sticky top-0 pt-4 flex flex-col items-center">
+                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">Live Preview</h3>
+                                
+                                <!-- Phone Mockup -->
+                                <div class="relative w-[320px] h-[640px] bg-gray-900 rounded-[40px] shadow-phone border-[10px] border-gray-800 overflow-hidden">
+                                    <!-- Notch -->
+                                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-800 rounded-b-2xl z-20"></div>
+                                    
+                                    <!-- Screen Content -->
+                                    <div class="w-full h-full bg-[#F7F5F2] overflow-y-auto no-scrollbar flex flex-col transition-all duration-300" id="preview-screen">
+                                        
+                                        <!-- Header Area -->
+                                        <div class="relative shrink-0 bg-white transition-all duration-300 h-40" id="preview-header-container">
+                                            <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80" class="w-full h-full object-cover opacity-90 transition-all duration-300" id="preview-banner-img">
+                                            
+                                            <!-- Logo Container -->
+                                            <div class="absolute transition-all duration-300" id="preview-logo-container">
+                                                <div class="w-16 h-16 bg-white rounded-full p-1 shadow-md">
+                                                    <div class="w-full h-full bg-gray-200 rounded-full overflow-hidden">
+                                                        <img src="https://cdn-icons-png.flaticon.com/512/2921/2921822.png" class="w-full h-full object-cover" id="preview-logo-img">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Info Text -->
+                                        <div class="px-4 pb-2 pt-8 transition-all duration-300" id="preview-info-container">
+                                            <h3 class="font-bold text-lg leading-tight" id="preview-title">Warung Bu Dewi</h3>
+                                            <p class="text-[10px] text-gray-500 mt-1" id="preview-desc-text">Rasanya seperti masakan ibu</p>
+                                        </div>
+
+                                        <!-- Categories -->
+                                        <div class="px-4 py-2 flex gap-2 overflow-x-hidden whitespace-nowrap shrink-0" id="preview-cat-container">
+                                            <span class="text-[10px] px-3 py-1.5 rounded-full text-white font-bold shadow-sm" id="preview-active-cat">Makanan</span>
+                                            <span class="text-[10px] px-3 py-1.5 rounded-full bg-white text-gray-500 border border-gray-100">Minuman</span>
+                                            <span class="text-[10px] px-3 py-1.5 rounded-full bg-white text-gray-500 border border-gray-100">Cemilan</span>
+                                        </div>
+
+                                        <!-- Menu Items -->
+                                        <div class="p-4 pt-2 space-y-3 flex-1" id="preview-list-container">
+                                            <!-- Item 1 -->
+                                            <div class="bg-white p-3 flex gap-3 items-center shadow-sm border border-gray-50 preview-card relative group">
+                                                <div class="w-16 h-16 bg-gray-100 shrink-0 overflow-hidden preview-img-wrapper">
+                                                    <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                                                </div>
+                                                <div class="flex-1 min-w-0 flex flex-col h-full justify-center">
+                                                    <h4 class="font-bold text-xs text-dark truncate mb-0.5">Nasi Goreng Spesial</h4>
+                                                    <p class="text-[9px] text-gray-400 line-clamp-2 mb-1 preview-desc">Lengkap dengan telur mata sapi dan dua tusuk sate ayam.</p>
+                                                    <div class="flex justify-between items-end mt-auto w-full">
+                                                        <span class="font-bold text-sm preview-price-color">Rp 25.000</span>
+                                                        <button class="preview-add-btn flex items-center justify-center text-white text-[10px] transition-all">
+                                                            <i class="fa-solid fa-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Item 2 -->
+                                            <div class="bg-white p-3 flex gap-3 items-center shadow-sm border border-gray-50 preview-card relative group">
+                                                <div class="w-16 h-16 bg-gray-100 shrink-0 overflow-hidden preview-img-wrapper">
+                                                    <img src="https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                                                </div>
+                                                <div class="flex-1 min-w-0 flex flex-col h-full justify-center">
+                                                    <h4 class="font-bold text-xs text-dark truncate mb-0.5">Es Kopi Susu</h4>
+                                                    <p class="text-[9px] text-gray-400 line-clamp-2 mb-1 preview-desc">Gula aren asli dengan susu fresh milk.</p>
+                                                    <div class="flex justify-between items-end mt-auto w-full">
+                                                        <span class="font-bold text-sm preview-price-color">Rp 18.000</span>
+                                                        <button class="preview-add-btn flex items-center justify-center text-white text-[10px] transition-all">
+                                                            <i class="fa-solid fa-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Item 3 -->
+                                             <div class="bg-white p-3 flex gap-3 items-center shadow-sm border border-gray-50 preview-card relative group">
+                                                <div class="w-16 h-16 bg-gray-100 shrink-0 overflow-hidden preview-img-wrapper">
+                                                    <img src="https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=150&q=80" class="w-full h-full object-cover">
+                                                </div>
+                                                <div class="flex-1 min-w-0 flex flex-col h-full justify-center">
+                                                    <h4 class="font-bold text-xs text-dark truncate mb-0.5">Sate Ayam</h4>
+                                                    <p class="text-[9px] text-gray-400 line-clamp-2 mb-1 preview-desc">Bumbu kacang madura asli dengan lontong.</p>
+                                                    <div class="flex justify-between items-end mt-auto w-full">
+                                                        <span class="font-bold text-sm preview-price-color">Rp 30.000</span>
+                                                        <button class="preview-add-btn flex items-center justify-center text-white text-[10px] transition-all">
+                                                            <i class="fa-solid fa-plus"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Floating Cart -->
+                                        <div class="absolute bottom-4 left-4 right-4 p-3 rounded-xl text-white flex justify-between items-center shadow-lg preview-btn-bg z-10">
+                                            <div class="flex items-center gap-2">
+                                                <span class="bg-white/20 w-6 h-6 flex items-center justify-center rounded text-xs font-bold">1</span>
+                                                <span class="text-xs font-bold">Rp 25.000</span>
+                                            </div>
+                                            <i class="fa-solid fa-basket-shopping text-xs"></i>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        let customAccentColor = null;
+
+        function applyCustomColor(val) {
+            customAccentColor = val;
+            document.getElementById('custom-color-display').style.backgroundColor = val;
+            document.getElementById('custom-color-icon').classList.add('hidden');
+            
+            // Uncheck other radios
+            const radios = document.querySelectorAll('input[name="theme-color"]');
+            radios.forEach(r => r.checked = false);
+
+            updatePreview();
+        }
+
+        function resetBgColor() {
+            document.getElementById('bg-color-input').value = "#F7F5F2";
+            updatePreview();
+        }
+
+        function handleImageUpload(input, imgId) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById(imgId).src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function updatePreview() {
+            // 1. Get Values
+            let color = '#1B4332';
+            const colorRadio = document.querySelector('input[name="theme-color"]:checked');
+            if(colorRadio) {
+                color = colorRadio.value;
+                // Reset custom color UI if radio is picked
+                document.getElementById('custom-color-display').style.backgroundColor = 'transparent';
+                document.getElementById('custom-color-icon').classList.remove('hidden');
+                customAccentColor = null;
+            } else if(customAccentColor) {
+                color = customAccentColor;
+            }
+
+            const layout = document.querySelector('input[name="layout-style"]:checked').value;
+            const pattern = document.querySelector('input[name="bg-pattern"]:checked').value;
+            const headerStyle = document.querySelector('input[name="header-style"]:checked').value;
+            const radius = document.getElementById('radius-slider').value;
+            const shadow = document.getElementById('shadow-slider').value;
+            const bgColor = document.getElementById('bg-color-input').value;
+            const font = document.querySelector('input[name="font-style"]:checked').value;
+            
+            const showImages = document.getElementById('show-images').checked;
+            const showDesc = document.getElementById('show-desc').checked;
+            const showBanner = document.getElementById('show-banner').checked;
+            const showProfile = document.getElementById('show-profile').checked;
+            const btnStyle = document.getElementById('btn-style-input').value;
+
+            // Content Updates
+            document.getElementById('preview-title').innerText = document.getElementById('input-title').value || 'Nama Toko';
+            document.getElementById('preview-desc-text').innerText = document.getElementById('input-desc-text').value || '';
+
+            // === APPLY STYLES ===
+
+            // 1. Colors
+            document.getElementById('preview-active-cat').style.backgroundColor = color;
+            const priceEls = document.getElementsByClassName('preview-price-color');
+            for(let el of priceEls) el.style.color = color;
+            const btnBgEls = document.getElementsByClassName('preview-btn-bg');
+            for(let el of btnBgEls) el.style.backgroundColor = color;
+            const addBtns = document.getElementsByClassName('preview-add-btn');
+            for(let el of addBtns) el.style.backgroundColor = color;
+
+            // 2. Background
+            const screen = document.getElementById('preview-screen');
+            screen.classList.remove('pattern-dots', 'pattern-grid', 'pattern-none');
+            screen.classList.add(pattern);
+            screen.style.backgroundColor = bgColor;
+
+            // 3. Header Visibility & Style
+            const bannerImg = document.getElementById('preview-banner-img');
+            const logoContainer = document.getElementById('preview-logo-container');
+            const infoContainer = document.getElementById('preview-info-container');
+
+            // Banner Toggle
+            if(showBanner) {
+                bannerImg.style.opacity = '0.9';
+            } else {
+                bannerImg.style.opacity = '0';
+            }
+
+            // Profile Toggle
+            if(showProfile) {
+                logoContainer.classList.remove('hidden');
+            } else {
+                logoContainer.classList.add('hidden');
+            }
+
+            // Position Style
+            if (headerStyle === 'center') {
+                logoContainer.className = `absolute left-1/2 -translate-x-1/2 -bottom-8 w-20 h-20 bg-white rounded-full p-1 shadow-md transition-all duration-300 ${showProfile ? '' : 'hidden'}`;
+                infoContainer.className = "px-4 pb-2 pt-10 text-center transition-all duration-300";
+                document.getElementById('preview-cat-container').classList.replace('justify-start', 'justify-center');
+            } else {
+                logoContainer.className = `absolute left-4 -bottom-6 w-16 h-16 bg-white rounded-full p-1 shadow-md transition-all duration-300 ${showProfile ? '' : 'hidden'}`;
+                infoContainer.className = "px-4 pb-2 pt-8 text-left transition-all duration-300";
+                document.getElementById('preview-cat-container').classList.remove('justify-center');
+            }
+
+            // 4. Layout (List vs Grid)
+            const listContainer = document.getElementById('preview-list-container');
+            const cards = document.getElementsByClassName('preview-card');
+            const imgWrappers = document.getElementsByClassName('preview-img-wrapper');
+
+            if (layout === 'grid') {
+                listContainer.className = 'p-4 pt-2 grid grid-cols-2 gap-3 flex-1';
+                for(let card of cards) {
+                    card.className = `bg-white p-2.5 flex flex-col gap-2 shadow-sm border border-gray-50 preview-card relative group h-full`;
+                }
+                for(let wrapper of imgWrappers) {
+                    wrapper.className = `w-full h-24 bg-gray-100 shrink-0 overflow-hidden preview-img-wrapper mb-1`;
+                }
+            } else {
+                listContainer.className = 'p-4 pt-2 space-y-3 flex-1';
+                for(let card of cards) {
+                    card.className = `bg-white p-3 flex gap-3 items-center shadow-sm border border-gray-50 preview-card relative group`;
+                }
+                for(let wrapper of imgWrappers) {
+                    wrapper.className = `w-16 h-16 bg-gray-100 shrink-0 overflow-hidden preview-img-wrapper`;
+                }
+            }
+
+            // 5. Visibility (Images & Desc)
+            for(let wrapper of imgWrappers) {
+                wrapper.style.display = showImages ? 'block' : 'none';
+            }
+            const descs = document.getElementsByClassName('preview-desc');
+            for(let d of descs) {
+                d.style.display = showDesc ? 'block' : 'none';
+            }
+
+            // 6. Radius & Shadow
+            const shadowClasses = ['shadow-none', 'shadow-sm', 'shadow', 'shadow-md'];
+            for(let card of cards) {
+                card.style.borderRadius = `${radius}px`;
+                card.classList.remove(...shadowClasses);
+                card.classList.add(shadowClasses[shadow]);
+            }
+            for(let wrapper of imgWrappers) {
+                wrapper.style.borderRadius = `${Math.max(4, radius - 4)}px`;
+            }
+
+            // 7. Button Style
+            for(let btn of addBtns) {
+                if (btnStyle === 'circle') {
+                    btn.className = 'preview-add-btn w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] transition-all';
+                    btn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+                } else if (btnStyle === 'square') {
+                    btn.className = 'preview-add-btn w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] transition-all';
+                    btn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+                } else if (btnStyle === 'pill') {
+                    btn.className = 'preview-add-btn px-3 py-1 rounded-full flex items-center justify-center text-white text-[10px] font-bold transition-all';
+                    btn.innerHTML = 'Tambah';
+                }
+            }
+
+            // 8. Font Family
+            const title = document.getElementById('preview-title');
+            if (font === 'Inter') {
+                screen.style.fontFamily = '"Inter", sans-serif';
+                title.style.fontFamily = '"Inter", sans-serif';
+            } else if (font === 'Poppins') {
+                screen.style.fontFamily = '"Poppins", sans-serif';
+                title.style.fontFamily = '"Poppins", sans-serif';
+            } else if (font === 'Lato') {
+                screen.style.fontFamily = '"Lato", sans-serif';
+                title.style.fontFamily = '"Lato", sans-serif';
+            } else if (font === 'Playfair Display') {
+                screen.style.fontFamily = '"Plus Jakarta Sans", sans-serif';
+                title.style.fontFamily = '"Playfair Display", serif';
+            } else {
+                screen.style.fontFamily = '"Plus Jakarta Sans", sans-serif';
+                title.style.fontFamily = '"Plus Jakarta Sans", sans-serif';
+            }
+        }
+
+        function setBtnStyle(style) {
+            document.getElementById('btn-style-input').value = style;
+            const btns = document.querySelectorAll('.btn-style-opt');
+            btns.forEach(b => {
+                b.classList.remove('bg-primary/10', 'text-primary', 'border-primary');
+                if(b.dataset.style === style) {
+                    b.classList.add('bg-primary/10', 'text-primary', 'border-primary');
+                }
+            });
+            updatePreview();
+        }
+
+        function saveTheme() {
+            const btn = document.querySelector('button[onclick="saveTheme()"]');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Tersimpan';
+                btn.classList.remove('bg-primary', 'hover:bg-primaryLight');
+                btn.classList.add('bg-green-600');
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.classList.remove('opacity-75', 'cursor-not-allowed', 'bg-green-600');
+                    btn.classList.add('bg-primary', 'hover:bg-primaryLight');
+                }, 2000);
+            }, 1000);
+        }
+
+        function resetTheme() {
+            document.querySelector('input[value="#1B4332"]').checked = true;
+            document.querySelector('input[value="list"]').checked = true;
+            document.querySelector('input[value="pattern-none"]').checked = true;
+            document.querySelector('input[value="standard"]').checked = true;
+            document.querySelector('input[value="Plus Jakarta Sans"]').checked = true; // Reset font
+            document.getElementById('radius-slider').value = 12;
+            document.getElementById('shadow-slider').value = 1;
+            document.getElementById('bg-color-input').value = "#F7F5F2";
+            document.getElementById('show-images').checked = true;
+            document.getElementById('show-desc').checked = true;
+            document.getElementById('show-banner').checked = true;
+            document.getElementById('show-profile').checked = true;
+            
+            // Reset Text
+            document.getElementById('input-title').value = "Warung Bu Dewi";
+            document.getElementById('input-desc-text').value = "Rasanya seperti masakan ibu";
+            
+            // Reset custom color
+            document.getElementById('custom-color-display').style.backgroundColor = 'transparent';
+            document.getElementById('custom-color-icon').classList.remove('hidden');
+            customAccentColor = null;
+
+            setBtnStyle('circle');
+            updatePreview();
+        }
+
+        setBtnStyle('circle');
+        window.onload = updatePreview;
+    </script>
+</body>
+</html>

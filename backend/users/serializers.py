@@ -10,6 +10,8 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from restaurants.utils import require_user_restaurant
+
 from .models import User, UserRole
 
 
@@ -27,9 +29,11 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id',
+            'restaurant',
             'email',
             'full_name',
             'phone_number',
+            'employee_code',
             'role',
             'is_active',
             'is_staff',
@@ -53,6 +57,25 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop('password')
         return User.objects.create_user(password=password, **validated_data)
+
+
+class CashierLoginSerializer(serializers.Serializer):
+    employee_code = serializers.CharField(max_length=32)
+    pin_code = serializers.CharField(max_length=6)
+
+    def validate(self, attrs):
+        try:
+            user = User.objects.get(employee_code=attrs['employee_code'], role=UserRole.CASHIER)
+        except User.DoesNotExist as error:
+            raise serializers.ValidationError(_('Cashier account not found.')) from error
+
+        if not user.pin_code or user.pin_code != attrs['pin_code']:
+            raise serializers.ValidationError(_('Invalid cashier credentials.'))
+        if not user.is_active:
+            raise serializers.ValidationError(_('User account is disabled.'))
+
+        attrs['user'] = user
+        return attrs
 
 
 class LoginSerializer(serializers.Serializer):
@@ -85,6 +108,65 @@ class AuthResponseSerializer(serializers.Serializer):
 
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
+
+
+class EmployeeSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True, min_length=6)
+    pin_code = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=6)
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'email',
+            'full_name',
+            'phone_number',
+            'role',
+            'employee_code',
+            'pin_code',
+            'password',
+            'is_active',
+        )
+        read_only_fields = ('id', 'employee_code')
+
+    def validate_role(self, value):
+        if value not in {UserRole.MANAGER, UserRole.CASHIER, UserRole.KITCHEN}:
+            raise serializers.ValidationError(_('Only manager, cashier, or kitchen roles can be assigned here.'))
+        return value
+
+    def create(self, validated_data):
+        request = self.context['request']
+        restaurant = require_user_restaurant(request.user)
+        password = validated_data.pop('password', '')
+        pin_code = validated_data.pop('pin_code', '')
+
+        next_number = restaurant.team_members.exclude(employee_code__isnull=True).count() + 1
+        prefix = 'KSR' if validated_data['role'] == UserRole.CASHIER else 'STA'
+        employee_code = f"{prefix}-{restaurant.id:02d}{next_number:03d}"
+
+        user = User.objects.create_user(
+            password=password or pin_code or 'tapmenu123',
+            restaurant=restaurant,
+            employee_code=employee_code,
+            pin_code=pin_code,
+            **validated_data,
+        )
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        pin_code = validated_data.pop('pin_code', None)
+
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+
+        if pin_code is not None:
+            instance.pin_code = pin_code
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+        return instance
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
@@ -173,6 +255,17 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     email = serializers.EmailField()
     token = serializers.CharField(max_length=6, min_length=6)
     new_password = serializers.CharField(write_only=True, min_length=8)
+
+    @classmethod
+    def build_token_payload(cls, user: User) -> dict[str, str]:
+        token = ''.join(random.choices(string.digits, k=6))
+        user.reset_token = token
+        user.reset_token_created_at = timezone.now()
+        user.save(update_fields=['reset_token', 'reset_token_created_at'])
+        return {
+            'email': user.email,
+            'token': token,
+        }
 
     def validate(self, attrs):
         email = attrs.get('email')

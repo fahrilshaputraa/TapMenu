@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { api } from '../../services/api'
 
 export function StoreSettings() {
+  const [hasRestaurantProfile, setHasRestaurantProfile] = useState(true)
+  const [restaurantSlug, setRestaurantSlug] = useState('')
   const [storeData, setStoreData] = useState({
     name: 'Warung Bu Dewi',
     slogan: 'Rasanya seperti masakan ibu',
@@ -19,6 +22,7 @@ export function StoreSettings() {
   const [bannerImg, setBannerImg] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [error, setError] = useState('')
 
   const [operationalDays, setOperationalDays] = useState({
     senin: true,
@@ -36,6 +40,60 @@ export function StoreSettings() {
     newOrderNotification: true,
   })
 
+  useEffect(() => {
+    let active = true
+
+    async function loadStore() {
+      try {
+        const payload = await api.get('/api/v1/restaurants/me/')
+        if (!active) return
+
+        setHasRestaurantProfile(true)
+
+        setStoreData((current) => ({
+          ...current,
+          name: payload.name || '',
+          slogan: payload.description || '',
+          phone: (payload.phone_number || '').replace(/^\+?62/, ''),
+          address: payload.address || '',
+          openTime: payload.opening_time || '08:00',
+          closeTime: payload.closing_time || '22:00',
+        }))
+        setRestaurantSlug(payload.slug || '')
+
+        if (payload.operational_days && typeof payload.operational_days === 'object') {
+          setOperationalDays({
+            ...operationalDays,
+            ...payload.operational_days
+          })
+        }
+
+        setSettings((current) => ({
+          ...current,
+          acceptOnlineOrders: payload.is_open ?? true,
+        }))
+
+        if (payload.appearance?.logo_url) setLogoImg(payload.appearance.logo_url)
+        if (payload.appearance?.cover_image_url) setBannerImg(payload.appearance.cover_image_url)
+      } catch (requestError) {
+        if (!active) return
+
+        if (requestError.payload?.detail === 'Restaurant has not been created yet.') {
+          setHasRestaurantProfile(false)
+          setError('')
+          return
+        }
+
+        setError(requestError.message)
+      }
+    }
+
+    loadStore()
+    return () => {
+      active = false
+    }
+  }, [])
+
   const handleImageUpload = (e, setImage) => {
     const file = e.target.files[0]
     if (file) {
@@ -49,13 +107,37 @@ export function StoreSettings() {
     }
   }
 
-  const saveStoreProfile = () => {
+  const saveStoreProfile = async () => {
     setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
+    setError('')
+
+    const nextSlug = storeData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 255)
+
+    try {
+      await api.put('/api/v1/restaurants/me/', {
+        name: storeData.name,
+        slug: nextSlug,
+        description: storeData.slogan,
+        phone_number: storeData.phone ? `62${storeData.phone.replace(/^0+/, '')}` : '',
+        address: storeData.address,
+        opening_time: storeData.openTime,
+        closing_time: storeData.closeTime,
+        operational_days: operationalDays,
+        is_open: settings.acceptOnlineOrders,
+        appearance: {
+          logo_url: logoImg.startsWith('data:') ? '' : logoImg,
+          cover_image_url: bannerImg.startsWith('data:') ? '' : bannerImg,
+        },
+      })
+      setHasRestaurantProfile(true)
+      setRestaurantSlug(nextSlug)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
-    }, 1000)
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -68,7 +150,7 @@ export function StoreSettings() {
         </div>
         <div className="flex gap-2">
           <Link
-            to="/order"
+            to={restaurantSlug ? `/order?restaurant=${restaurantSlug}` : '/order'}
             className="hidden sm:flex px-4 py-2.5 bg-white border border-gray-200 text-gray-600 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all items-center gap-2"
           >
             <i className="fa-regular fa-eye"></i>
@@ -86,13 +168,19 @@ export function StoreSettings() {
             ) : saveSuccess ? (
               <><i className="fa-solid fa-check"></i> Tersimpan</>
             ) : (
-              <><i className="fa-regular fa-floppy-disk"></i> Simpan</>
+              <><i className="fa-regular fa-floppy-disk"></i> {hasRestaurantProfile ? 'Simpan' : 'Buat Toko'}</>
             )}
           </button>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto space-y-8 fade-in">
+        {!hasRestaurantProfile ? (
+          <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+            Profil restoran untuk akun ini belum ada. Isi form di halaman ini lalu klik <strong>{'Buat Toko'}</strong> untuk membuat data restoran pertama kali.
+          </div>
+        ) : null}
+        {error ? <div className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div> : null}
         {/* Visual Branding Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Logo Upload */}

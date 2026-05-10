@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { api } from '../../services/api'
 
 export function MenuAppearance() {
   // State for all settings
@@ -23,6 +24,7 @@ export function MenuAppearance() {
   const [bannerImg, setBannerImg] = useState('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80')
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [error, setError] = useState('')
 
   const colors = [
     '#1B4332', '#E07A5F', '#2563EB', '#DC2626',
@@ -48,6 +50,30 @@ export function MenuAppearance() {
     setThemeColor(null)
   }
 
+  useEffect(() => {
+    let active = true
+
+    async function loadAppearance() {
+      try {
+        const payload = await api.get('/api/v1/restaurants/appearance/')
+        if (!active) return
+        setTitle(payload.hero_title || 'Warung Bu Dewi')
+        setDescription(payload.hero_subtitle || 'Rasanya seperti masakan ibu')
+        setThemeColor(payload.primary_color || '#1B4332')
+        setCustomColor(null)
+        if (payload.logo_url) setLogoImg(payload.logo_url)
+        if (payload.cover_image_url) setBannerImg(payload.cover_image_url)
+      } catch (requestError) {
+        if (active) setError(requestError.message)
+      }
+    }
+
+    loadAppearance()
+    return () => {
+      active = false
+    }
+  }, [])
+
   const resetTheme = () => {
     setTitle('Warung Bu Dewi')
     setDescription('Rasanya seperti masakan ibu')
@@ -67,13 +93,26 @@ export function MenuAppearance() {
     setBtnStyle('circle')
   }
 
-  const saveTheme = () => {
+  const saveTheme = async () => {
     setIsSaving(true)
-    setTimeout(() => {
-      setIsSaving(false)
+    setError('')
+
+    try {
+      await api.put('/api/v1/restaurants/appearance/', {
+        hero_title: title,
+        hero_subtitle: description,
+        primary_color: activeColor,
+        accent_color: '#E07A5F',
+        logo_url: logoImg.startsWith('data:') ? '' : logoImg,
+        cover_image_url: bannerImg.startsWith('data:') ? '' : bannerImg,
+      })
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
-    }, 1000)
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const activeColor = customColor || themeColor || '#1B4332'
@@ -130,6 +169,7 @@ export function MenuAppearance() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {error ? <div className="lg:col-span-12 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div> : null}
 
         {/* CONTROLS (Left Side) */}
         <div className="lg:col-span-7 space-y-6">

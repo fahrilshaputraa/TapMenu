@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Search,
   Plus,
@@ -14,52 +14,34 @@ import {
   Store
 } from 'lucide-react'
 
-const categories = [
-  { id: 'all', name: 'Semua' },
-  { id: 'food', name: 'Makanan' },
-  { id: 'drink', name: 'Minuman' },
-  { id: 'snack', name: 'Paket Hemat' },
-]
+import { api } from '../../services/api'
+import { getStoredAuth } from '../../services/auth'
 
-const addOns = [
-  { id: 'telur', name: 'Tambah Telur', price: 5000 },
-  { id: 'keju', name: 'Tambah Keju', price: 7000 },
-  { id: 'sambal', name: 'Extra Sambal', price: 3000 },
-  { id: 'nasi', name: 'Extra Nasi', price: 5000 },
-  { id: 'ayam', name: 'Extra Ayam', price: 10000 },
-  { id: 'sayur', name: 'Extra Sayuran', price: 4000 },
-]
-
-const menuItems = [
-  { id: 1, name: 'Nasi Goreng Spesial', category: 'food', categoryName: 'Makanan', price: 15000, stock: true, addOns: ['telur', 'keju', 'sambal', 'ayam'], image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=300&h=300&fit=crop' },
-  { id: 2, name: 'Ayam Bakar', category: 'food', categoryName: 'Makanan', price: 25000, stock: true, addOns: ['nasi', 'sambal', 'sayur'], image: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?w=300&h=300&fit=crop' },
-  { id: 3, name: 'Mie Goreng', category: 'food', categoryName: 'Makanan', price: 12000, stock: true, addOns: ['telur', 'keju', 'sambal', 'ayam'], image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=300&h=300&fit=crop' },
-  { id: 4, name: 'Soto Ayam', category: 'food', categoryName: 'Makanan', price: 15000, stock: false, addOns: ['nasi', 'telur'], image: 'https://images.unsplash.com/photo-1547928576-b822bc410f86?w=300&h=300&fit=crop' },
-  { id: 5, name: 'Gado-gado', category: 'food', categoryName: 'Makanan', price: 12000, stock: true, addOns: ['telur', 'keju'], image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=300&h=300&fit=crop' },
-  { id: 6, name: 'Nasi Campur', category: 'food', categoryName: 'Makanan', price: 18000, stock: true, addOns: ['telur', 'sambal', 'ayam', 'sayur'], image: 'https://images.unsplash.com/photo-1569058242567-93de6f36f8e6?w=300&h=300&fit=crop' },
-  { id: 7, name: 'Ayam Geprek', category: 'food', categoryName: 'Makanan', price: 16000, stock: true, addOns: ['nasi', 'keju', 'sambal', 'telur'], image: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=300&h=300&fit=crop' },
-  { id: 8, name: 'Es Teh Manis', category: 'drink', categoryName: 'Minuman', price: 5000, stock: true, addOns: [], image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=300&h=300&fit=crop' },
-  { id: 9, name: 'Es Jeruk', category: 'drink', categoryName: 'Minuman', price: 6000, stock: true, addOns: [], image: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=300&h=300&fit=crop' },
-  { id: 10, name: 'Jus Alpukat', category: 'drink', categoryName: 'Minuman', price: 10000, stock: true, addOns: ['keju'], image: 'https://images.unsplash.com/photo-1638176066666-ffb2f013c7dd?w=300&h=300&fit=crop' },
-  { id: 11, name: 'Kopi Hitam', category: 'drink', categoryName: 'Minuman', price: 5000, stock: true, addOns: [], image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300&h=300&fit=crop' },
-  { id: 12, name: 'Es Cappuccino', category: 'drink', categoryName: 'Minuman', price: 12000, stock: true, addOns: [], image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=300&h=300&fit=crop' },
-  { id: 13, name: 'Kerupuk', category: 'snack', categoryName: 'Paket Hemat', price: 3000, stock: true, addOns: [], image: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=300&fit=crop' },
-  { id: 14, name: 'Tempe Goreng', category: 'snack', categoryName: 'Paket Hemat', price: 5000, stock: true, addOns: ['sambal'], image: 'https://images.unsplash.com/photo-1562565652-a0d8f0c59eb4?w=300&h=300&fit=crop' },
-]
+const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80'
 
 export function Cashier() {
-  // Auth state
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const [cashierId, setCashierId] = useState('KSR-001')
-  const [pin, setPin] = useState('123456')
+  const { user } = getStoredAuth() || {}
+
+  // Backend state
+  const [categories, setCategories] = useState([{ id: 'all', name: 'Semua' }])
+  const [menuItems, setMenuItems] = useState([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [taxRate, setTaxRate] = useState(10)
+  const [restaurantName, setRestaurantName] = useState('TapMenu Kasir')
+  const [restaurantAddress, setRestaurantAddress] = useState('')
+
+  // Cashier Lock state
+  const [isPosOpen, setIsPosOpen] = useState(false)
+  const [cashierId, setCashierId] = useState(user?.employee_code || user?.full_name || 'Owner/Admin')
+  const [pin, setPin] = useState('')
   const [loginError, setLoginError] = useState('')
 
   // POS state
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [cart, setCart] = useState([])
-  const [orderType, setOrderType] = useState('dine-in')
-  const [orderNumber, setOrderNumber] = useState('#0094')
+  const [orderType, setOrderType] = useState('dine_in')
+  const [orderNumber, setOrderNumber] = useState('')
 
   // Modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -80,35 +62,70 @@ export function Cashier() {
     year: 'numeric'
   })
 
+
+
+  useEffect(() => {
+    let active = true
+    async function loadData() {
+      try {
+        const [catsRes, itemsRes, meRes] = await Promise.all([
+          api.get('/api/v1/catalogs/categories/'),
+          api.get('/api/v1/catalogs/items/'),
+          api.get('/api/v1/restaurants/me/')
+        ])
+        if (!active) return
+
+        const loadedCats = Array.isArray(catsRes?.results) ? catsRes.results : (catsRes || [])
+        const loadedItems = Array.isArray(itemsRes?.results) ? itemsRes.results : (itemsRes || [])
+        
+        setCategories([{ id: 'all', name: 'Semua' }, ...loadedCats.map(c => ({ id: String(c.id), name: c.name }))])
+        setMenuItems(loadedItems)
+        if (meRes) {
+           setTaxRate(Number(meRes.tax_rate || 0))
+           setRestaurantName(meRes.name || 'TapMenu Kasir')
+           setRestaurantAddress(meRes.address || 'Bandung')
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    loadData()
+    return () => { active = false }
+  }, [])
+
   const filteredItems = menuItems.filter(item => {
-    if (selectedCategory !== 'all' && item.category !== selectedCategory) return false
+    if (selectedCategory !== 'all' && String(item.category) !== selectedCategory) return false
     if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
   })
 
-  const getAddOnDetails = (addOnIds) => {
-    return addOnIds.map(id => addOns.find(a => a.id === id)).filter(Boolean)
+  // getAddOnDetails converts simple variant selection (selectedAddOns) back to option objects
+  const getAddOnDetails = (selectedOptionsArr) => {
+    // Array of { groupName, optionName, price }
+    return selectedOptionsArr || []
   }
 
-  const calculateAddOnsPrice = (addOnIds) => {
-    return addOnIds.reduce((sum, id) => {
-      const addOn = addOns.find(a => a.id === id)
-      return sum + (addOn ? addOn.price : 0)
-    }, 0)
+  const calculateAddOnsPrice = (selectedOptionsArr) => {
+    return (selectedOptionsArr || []).reduce((sum, opt) => sum + (Number(opt.price) || 0), 0)
   }
 
-  const toggleAddOn = (addOnId) => {
-    setSelectedAddOns(prev =>
-      prev.includes(addOnId)
-        ? prev.filter(id => id !== addOnId)
-        : [...prev, addOnId]
-    )
+  const toggleAddOn = (groupName, optionId, optionName, optionPrice) => {
+    setSelectedAddOns(prev => {
+      // Remove any existing option from the same group
+      const filtered = prev.filter(opt => opt.groupName !== groupName)
+      // Toggle off if they clicked the exact same option
+      const exists = prev.find(opt => opt.groupName === groupName && opt.optionName === optionName)
+      if (exists) return filtered
+      
+      // Select the new option
+      return [...filtered, { groupName, optionId, optionName, price: optionPrice }]
+    })
   }
 
   const handleItemClick = (item) => {
-    if (!item.stock) return
+    if (!item.in_stock) return
 
-    if (item.addOns && item.addOns.length > 0) {
+    if (item.variants && item.variants.length > 0) {
       setSelectedItem(item)
       setSelectedAddOns([])
       setShowAddOnModal(true)
@@ -118,8 +135,11 @@ export function Cashier() {
   }
 
   const addToCartDirect = (item, itemAddOns) => {
-    const cartItemId = `${item.id}-${itemAddOns.sort().join('-')}`
+    // Unique ID generation per precise variant configurations
+    const addOnHash = itemAddOns.map(o => o.optionName).sort().join('-')
+    const cartItemId = `${item.id}-${addOnHash}`
     const existingItem = cart.find(cartItem => cartItem.cartItemId === cartItemId)
+    const effectivePrice = Number(item.effective_price ?? item.price ?? 0)
 
     if (existingItem) {
       setCart(cart.map(cartItem =>
@@ -130,6 +150,7 @@ export function Cashier() {
     } else {
       setCart([...cart, {
         ...item,
+        price: effectivePrice,
         cartItemId,
         selectedAddOns: itemAddOns,
         quantity: 1,
@@ -184,7 +205,7 @@ export function Cashier() {
     const addOnsPrice = calculateAddOnsPrice(item.selectedAddOns || [])
     return sum + ((item.price + addOnsPrice) * item.quantity)
   }, 0)
-  const tax = Math.round(subtotal * 0.1) // Pajak 10%
+  const tax = Math.round(subtotal * (taxRate / 100))
   const total = subtotal + tax
 
   const handlePayment = () => {
@@ -192,20 +213,46 @@ export function Cashier() {
     setShowPaymentModal(true)
   }
 
-  const processPayment = () => {
-    // Generate new order number
-    const newOrderNumber = '#' + String(Math.floor(Math.random() * 10000)).padStart(4, '0')
-    setOrderNumber(newOrderNumber)
-    setShowPaymentModal(false)
-    setShowSuccessModal(true)
+  const processPayment = async () => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
+    
+    try {
+       // Assemble correct variants list payload logic
+       const orderItems = cart.map(item => {
+          let assembledVariants = ''
+          if (item.selectedAddOns && item.selectedAddOns.length > 0) {
+             assembledVariants = item.selectedAddOns.map(o => `${o.groupName}: ${o.optionName}`).join(', ')
+          }
+           
+          return {
+             menu_item_id: item.id,
+             quantity: item.quantity,
+             notes: item.note ? `${item.note}${assembledVariants ? ' | ' + assembledVariants : ''}` : assembledVariants
+          }
+       })
+
+       const orderPayload = await api.post('/api/v1/orders/', {
+           order_type: orderType,
+           items: orderItems,
+       })
+
+       setOrderNumber(orderPayload.order_code)
+       setShowPaymentModal(false)
+       setShowSuccessModal(true)
+    } catch (err) {
+       console.error(err)
+       alert('Gagal memproses pesanan. Pastikan koneksi stabil.')
+    } finally {
+       setIsSubmitting(false)
+    }
   }
 
   const resetOrder = () => {
     setCart([])
     setCashReceived('')
     setShowSuccessModal(false)
-    // Generate new order number
-    setOrderNumber('#' + String(Math.floor(Math.random() * 10000)).padStart(4, '0'))
+    setOrderNumber('')
   }
 
   const clearCart = () => {
@@ -223,16 +270,17 @@ export function Cashier() {
   const change = cashReceived ? parseInt(cashReceived) - total : 0
 
   const enterPos = () => {
-    if (cashierId.trim() === 'KSR-001' && pin === '123456') {
-      setIsLoggedIn(true)
+    // For now, simple validation or hook this to `loginCashier(cashierId, pin)` if you want an explicit backend token refresh
+    if (pin.length >= 4) {
+      setIsPosOpen(true)
       setLoginError('')
     } else {
-      setLoginError('ID kasir atau PIN salah.')
+      setLoginError('PIN Anda salah atau kurang dari 4 digit.')
     }
   }
 
   // Login View
-  if (!isLoggedIn) {
+  if (!isPosOpen) {
     return (
       <div className="fixed inset-0 z-[100] bg-primary flex flex-col items-center justify-center p-6 text-center">
         <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full">
@@ -240,17 +288,16 @@ export function Cashier() {
             <Store className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-extrabold text-primary mb-2">Login Kasir</h1>
-          <p className="text-dark/60 mb-8 text-sm">Shift Pagi • Warung Bu Dewi</p>
+          <p className="text-dark/60 mb-8 text-sm">Akses Terminal Kasir</p>
 
           <div className="space-y-4">
             <div className="text-left">
-              <label className="text-xs font-semibold text-dark/60 mb-1 block">ID Kasir</label>
+              <label className="text-xs font-semibold text-dark/60 mb-1 block">Profil Login</label>
               <input
                 type="text"
                 value={cashierId}
-                onChange={(e) => setCashierId(e.target.value)}
-                className="w-full bg-bg border border-dark/20 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                placeholder="mis. KSR-001"
+                disabled
+                className="w-full bg-dark/5 border border-dark/10 rounded-xl px-4 py-3 text-sm font-bold text-dark/50 focus:outline-none cursor-not-allowed"
               />
             </div>
             <div className="text-left">
@@ -258,7 +305,7 @@ export function Cashier() {
               <input
                 type="password"
                 value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\\D/g, '').slice(0, 6))}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 inputMode="numeric"
                 pattern="[0-9]*"
                 className="w-full bg-bg border border-dark/20 rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
@@ -274,9 +321,6 @@ export function Cashier() {
             >
               Buka Kasir
             </button>
-            <p className="text-xs text-dark/50 text-left">
-              Gunakan ID <span className="font-semibold text-primary">KSR-001</span> dan PIN <span className="font-semibold text-primary">123456</span> untuk masuk.
-            </p>
           </div>
         </div>
       </div>
@@ -285,9 +329,9 @@ export function Cashier() {
 
   // POS View
   return (
-    <div className="fixed inset-0 flex h-screen bg-bg">
+    <div className="fixed inset-0 flex h-screen bg-bg print:bg-white print:h-auto print:block">
       {/* LEFT PANEL: MENU GRID */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden border-r border-dark/10 relative">
+      <div className="flex-1 flex flex-col h-full overflow-hidden border-r border-dark/10 relative print:hidden">
 
         {/* POS Header */}
         <header className="bg-white px-6 py-4 flex justify-between items-center shadow-sm z-20 shrink-0">
@@ -402,7 +446,7 @@ export function Cashier() {
       </div>
 
       {/* RIGHT PANEL: CART / TRANSACTION */}
-      <div className="w-[400px] bg-white flex flex-col h-full shadow-xl z-30 shrink-0">
+      <div className="w-[400px] bg-white flex flex-col h-full shadow-xl z-30 shrink-0 print:hidden">
 
         {/* Cart Header */}
         <div className="p-5 border-b border-dark/5 flex justify-between items-center">
@@ -687,15 +731,15 @@ export function Cashier() {
 
       {/* Receipt/Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 fade-in">
-          <div className="bg-white w-full max-w-xs rounded-lg shadow-2xl p-6 relative font-mono text-sm">
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-md flex items-center justify-center p-4 fade-in print:static print:bg-white print:p-0 print:block">
+          <div className="bg-white w-full max-w-xs rounded-lg shadow-2xl p-6 relative font-mono text-sm print:max-w-none print:shadow-none print:w-[80mm] print:mx-auto print:p-0">
 
             <div className="text-center mb-4">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-secondary rounded-full">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-secondary rounded-full print:hidden">
                 <Check className="w-6 h-6 text-primary" />
               </div>
-              <h2 className="font-bold text-xl uppercase text-dark">Warung Bu Dewi</h2>
-              <p className="text-xs text-dark/50">Jl. Merdeka No. 45, Bandung</p>
+              <h2 className="font-bold text-xl uppercase text-dark">{restaurantName}</h2>
+              <p className="text-xs text-dark/50">{restaurantAddress}</p>
             </div>
 
             <div className="border-b-2 border-dashed border-dark/20 pb-2 mb-2">
@@ -747,7 +791,7 @@ export function Cashier() {
 
             <div className="mt-6 text-center">
               <p className="text-xs mb-4 text-dark/50">*** TERIMA KASIH ***</p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 print:hidden">
                 <button
                   onClick={resetOrder}
                   className="flex-1 py-2.5 bg-primary text-white text-xs font-bold rounded-lg hover:bg-primary/90"
@@ -755,7 +799,7 @@ export function Cashier() {
                   Pesanan Baru
                 </button>
                 <button
-                  onClick={() => alert('Mencetak struk...')}
+                  onClick={() => window.print()}
                   className="flex-1 py-2.5 border border-dark/20 text-dark text-xs font-bold rounded-lg flex items-center justify-center gap-1 hover:bg-bg"
                 >
                   <Printer className="w-3.5 h-3.5" />

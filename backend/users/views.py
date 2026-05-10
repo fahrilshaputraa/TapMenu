@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema
-from rest_framework import permissions, status
+from rest_framework import permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
@@ -9,8 +9,12 @@ from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from restaurants.utils import OWNER_ACCESS_ROLES, ensure_roles, require_user_restaurant
+
 from .serializers import (
     AuthResponseSerializer,
+    CashierLoginSerializer,
+    EmployeeSerializer,
     LoginSerializer,
     LogoutSerializer,
     PasswordResetConfirmSerializer,
@@ -19,6 +23,7 @@ from .serializers import (
     UserSerializer,
     generate_tokens_for_user,
 )
+from .models import UserRole
 
 User = get_user_model()
 
@@ -52,6 +57,18 @@ class LoginView(APIView):
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        tokens = generate_tokens_for_user(user)
+        return Response({'user': UserSerializer(user).data, 'tokens': tokens})
+
+
+@extend_schema(tags=['Auth'], request=CashierLoginSerializer, responses={200: AuthResponseSerializer})
+class CashierLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = CashierLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         tokens = generate_tokens_for_user(user)
@@ -122,6 +139,38 @@ class PasswordResetConfirmView(APIView):
             {'detail': _('Password has been reset successfully.')},
             status=status.HTTP_200_OK,
         )
+
+
+class MeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response(UserSerializer(request.user).data)
+
+    def put(self, request):
+        serializer = EmployeeSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+            context={'request': request},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)
+
+
+class EmployeeViewSet(viewsets.ModelViewSet):
+    serializer_class = EmployeeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        ensure_roles(self.request.user, OWNER_ACCESS_ROLES)
+        restaurant = require_user_restaurant(self.request.user)
+        return User.objects.filter(restaurant=restaurant).exclude(role=UserRole.BUYER).order_by('full_name', 'email')
+
+    def perform_create(self, serializer):
+        ensure_roles(self.request.user, OWNER_ACCESS_ROLES)
+        serializer.save()
 
 
 class RefreshTokenView(TokenRefreshView):

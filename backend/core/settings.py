@@ -39,11 +39,11 @@ SECRET_KEY = os.getenv(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,172.16.14.146')
 
 CORS_ALLOWED_ORIGINS = env_list(
     'DJANGO_CORS_ALLOWED_ORIGINS',
-    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173',
+    'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://172.16.14.146:5173,http://172.16.14.146:5174',
 )
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = (
@@ -51,7 +51,7 @@ CORS_ALLOW_ALL_ORIGINS = (
 )
 CSRF_TRUSTED_ORIGINS = env_list(
     'DJANGO_CSRF_TRUSTED_ORIGINS',
-    'http://localhost:5173,http://127.0.0.1:5173',
+    'http://localhost:5173,http://127.0.0.1:5173,http://172.16.14.146:5173,http://172.16.14.146:5174',
 )
 
 
@@ -264,7 +264,12 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', 'wuzowvyhugjitzej')
 DEFAULT_FROM_EMAIL = os.getenv('DJANGO_DEFAULT_FROM_EMAIL', 'no-reply@tapmenu.local')
 
 # Frontend URL untuk link reset password
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://172.16.14.146:5173')
+
+# Midtrans Configuration
+MIDTRANS_SERVER_KEY = os.getenv('MIDTRANS_SERVER_KEY', '')
+MIDTRANS_CLIENT_KEY = os.getenv('MIDTRANS_CLIENT_KEY', '')
+MIDTRANS_IS_PRODUCTION = os.getenv('MIDTRANS_IS_PRODUCTION', 'False').lower() == 'true'
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'TapMenu API',

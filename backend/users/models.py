@@ -41,15 +41,26 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
+    restaurant = models.ForeignKey(
+        'restaurants.Restaurant',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='team_members',
+    )
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=255, blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
+    employee_code = models.CharField(max_length=32, unique=True, null=True, blank=True)
+    pin_code = models.CharField(max_length=6, blank=True)
     role = models.PositiveSmallIntegerField(
         choices=UserRole.choices,
         default=UserRole.BUYER,
     )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    reset_token = models.CharField(max_length=6, null=True, blank=True)
+    reset_token_created_at = models.DateTimeField(null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

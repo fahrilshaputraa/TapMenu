@@ -188,6 +188,7 @@ function App() {
         />
         <Route path="/order/:tableId" element={<CustomerMenu />} />
         <Route path="/order" element={<CustomerMenu />} />
+        <Route path="/menu" element={<CustomerMenu />} />
         <Route path="/order/status" element={<CustomerOrder />} />
         <Route path="/order/vouchers" element={<CustomerVoucher />} />
         <Route path="/order/history" element={<CustomerOrderHistory />} />

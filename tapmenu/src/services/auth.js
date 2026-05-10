@@ -1,124 +1,122 @@
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL && import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')) ||
-  'http://localhost:8111';
-
-const AUTH_STORAGE_KEY = 'tapmenu.auth';
-
-const defaultHeaders = {
-  'Content-Type': 'application/json',
-};
-
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
-  });
-
-  const isJson = response.headers.get('content-type')?.includes('application/json');
-  const data = isJson ? await response.json() : null;
-
-  if (!response.ok) {
-    // Handle non_field_errors (general errors like invalid credentials)
-    if (data?.non_field_errors) {
-      throw new Error(data.non_field_errors[0]);
-    }
-    // Handle validation errors (field-specific errors)
-    if (data && typeof data === 'object' && !data.detail && !data.message) {
-      const error = new Error('Validation error');
-      error.fieldErrors = data;
-      throw error;
-    }
-    const detail = data?.detail || data?.message || 'Terjadi kesalahan. Coba lagi.';
-    throw new Error(detail);
-  }
-
-  return data;
-}
+import { api, AUTH_STORAGE_KEY, hasValidStoredAccessToken } from './api'
 
 function persistAuth(payload) {
-  if (!payload?.tokens || !payload?.user) return;
-  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload));
+  if (!payload?.tokens || !payload?.user) return
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload))
 }
 
 export function getStoredAuth() {
-  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-  if (!raw) return null;
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+  if (!raw) return null
   try {
-    return JSON.parse(raw);
+    return JSON.parse(raw)
   } catch (_error) {
-    return null;
+    return null
   }
 }
 
 export function clearStoredAuth() {
-  localStorage.removeItem(AUTH_STORAGE_KEY);
+  localStorage.removeItem(AUTH_STORAGE_KEY)
 }
 
 export function isAuthenticated() {
-  const auth = getStoredAuth();
-  return Boolean(auth?.tokens?.access);
+  if (!hasValidStoredAccessToken()) {
+    clearStoredAuth()
+    return false
+  }
+
+  return true
+}
+
+export function getRoleLabel(role) {
+  const labels = {
+    1: 'Owner',
+    2: 'Manager',
+    3: 'Cashier',
+    4: 'Kitchen',
+    5: 'Buyer',
+  }
+  return labels[role] || 'User'
+}
+
+export function getRedirectForRole(role) {
+  if (role === 3) return '/dashboard/cashier'
+  if (role === 5) return '/order/history'
+  return '/dashboard'
 }
 
 export async function login(email, password) {
-  const payload = await request('/api/v1/auth/login/', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  });
-  persistAuth(payload);
-  return payload;
+  const payload = await api.post('/api/v1/auth/login/', { email, password }, { auth: false })
+  persistAuth(payload)
+  return payload
+}
+
+export async function loginCashier(employeeCode, pinCode) {
+  const payload = await api.post(
+    '/api/v1/auth/cashier-login/',
+    { employee_code: employeeCode, pin_code: pinCode },
+    { auth: false },
+  )
+  persistAuth(payload)
+  return payload
 }
 
 export async function registerOwner({ email, password, fullName, phoneNumber }) {
-  const payload = await request('/api/v1/auth/register/', {
-    method: 'POST',
-    body: JSON.stringify({
+  const payload = await api.post(
+    '/api/v1/auth/register/',
+    {
       email,
       password,
       full_name: fullName,
       phone_number: phoneNumber,
-      role: 1, // Owner
-    }),
-  });
-  persistAuth(payload);
-  return payload;
+      role: 1,
+    },
+    { auth: false },
+  )
+  persistAuth(payload)
+  return payload
 }
 
 export async function registerBuyer({ email, password, fullName, phoneNumber }) {
-  const payload = await request('/api/v1/auth/register/', {
-    method: 'POST',
-    body: JSON.stringify({
+  const payload = await api.post(
+    '/api/v1/auth/register/',
+    {
       email,
       password,
       full_name: fullName,
       phone_number: phoneNumber,
-      role: 5, // Buyer
-    }),
-  });
-  persistAuth(payload);
-  return payload;
+      role: 5,
+    },
+    { auth: false },
+  )
+  persistAuth(payload)
+  return payload
+}
+
+export async function fetchMe() {
+  return api.get('/api/v1/auth/me/')
+}
+
+export async function updateMe(payload) {
+  const user = await api.put('/api/v1/auth/me/', payload)
+  const auth = getStoredAuth()
+  if (auth?.tokens) {
+    persistAuth({ ...auth, user })
+  }
+  return user
 }
 
 export async function requestPasswordReset(email) {
-  return request('/api/v1/auth/forgot-password/', {
-    method: 'POST',
-    body: JSON.stringify({ email }),
-  });
+  return api.post('/api/v1/auth/forgot-password/', { email }, { auth: false })
 }
 
 export async function logout() {
-  const auth = getStoredAuth();
+  const auth = getStoredAuth()
   if (auth?.tokens?.refresh) {
     try {
-      await request('/api/v1/auth/logout/', {
-        method: 'POST',
-        body: JSON.stringify({ refresh: auth.tokens.refresh }),
-      });
-    } catch (error) {
-      console.error('Logout API error:', error);
+      await api.post('/api/v1/auth/logout/', { refresh: auth.tokens.refresh })
+    } catch (_error) {
     }
   }
-  clearStoredAuth();
+  clearStoredAuth()
 }

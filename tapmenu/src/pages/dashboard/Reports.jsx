@@ -1,57 +1,22 @@
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Table } from '../../components/Table'
+import { api } from '../../services/api'
 
-// Data dummy
-const reportData = {
-  today: {
-    revenue: 1250000,
-    transactions: 45,
-    average: 27777,
-    chartLabels: ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00"],
-    chartData: [150000, 300000, 550000, 200000, 400000, 600000, 350000],
-    employees: [
-      { name: "Siti Aminah", transactions: 20, total: 600000, avatar: "https://i.pravatar.cc/150?img=1" },
-      { name: "Andi Setiawan", transactions: 15, total: 450000, avatar: "https://i.pravatar.cc/150?img=3" },
-      { name: "Rini Wati", transactions: 10, total: 200000, avatar: "https://i.pravatar.cc/150?img=5" }
-    ]
-  },
-  week: {
-    revenue: 8450000,
-    transactions: 320,
-    average: 26406,
-    chartLabels: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"],
-    chartData: [1100000, 1250000, 900000, 1400000, 1800000, 2100000, 1600000],
-    employees: [
-      { name: "Siti Aminah", transactions: 120, total: 3500000, avatar: "https://i.pravatar.cc/150?img=1" },
-      { name: "Andi Setiawan", transactions: 110, total: 3000000, avatar: "https://i.pravatar.cc/150?img=3" },
-      { name: "Rini Wati", transactions: 90, total: 1950000, avatar: "https://i.pravatar.cc/150?img=5" }
-    ]
-  },
-  month: {
-    revenue: 35600000,
-    transactions: 1450,
-    average: 24551,
-    chartLabels: ["Minggu 1", "Minggu 2", "Minggu 3", "Minggu 4"],
-    chartData: [8500000, 9200000, 8100000, 9800000],
-    employees: [
-      { name: "Siti Aminah", transactions: 500, total: 14000000, avatar: "https://i.pravatar.cc/150?img=1" },
-      { name: "Andi Setiawan", transactions: 480, total: 12500000, avatar: "https://i.pravatar.cc/150?img=3" },
-      { name: "Rini Wati", transactions: 470, total: 9100000, avatar: "https://i.pravatar.cc/150?img=5" }
-    ]
-  }
+function formatRupiah(num) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(Number(num || 0))
 }
-
-const transactions = [
-  { id: "ORD-0094", time: "14:30", cashier: "Siti Aminah", method: "Tunai", total: 45000 },
-  { id: "ORD-0093", time: "14:15", cashier: "Andi Setiawan", method: "QRIS", total: 120000 },
-  { id: "ORD-0092", time: "13:45", cashier: "Siti Aminah", method: "Tunai", total: 25000 },
-  { id: "ORD-0091", time: "13:30", cashier: "Rini Wati", method: "QRIS", total: 78000 },
-  { id: "ORD-0090", time: "13:10", cashier: "Siti Aminah", method: "Tunai", total: 33000 },
-]
 
 export function Reports() {
   const [filter, setFilter] = useState('today')
+  const [summary, setSummary] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [animatedRevenue, setAnimatedRevenue] = useState(0)
   const [animatedTransactions, setAnimatedTransactions] = useState(0)
   const [animatedAverage, setAnimatedAverage] = useState(0)
@@ -59,62 +24,77 @@ export function Reports() {
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
 
-  const data = reportData[filter]
+  useEffect(() => {
+    let active = true
 
-  // Format Rupiah
-  const formatRupiah = (num) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0
-    }).format(num)
+    async function loadSummary() {
+      try {
+        const payload = await api.get('/api/v1/reports/summary/')
+        if (active) setSummary(payload)
+      } catch (requestError) {
+        if (active) setError(requestError.message)
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadSummary()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const data = {
+    revenue: Number(summary?.gross_sales || 0),
+    transactions: Number(summary?.total_orders || 0),
+    average: Number(summary?.paid_orders ? Number(summary.gross_sales || 0) / Number(summary.paid_orders) : 0),
+    chartLabels: filter === 'month' ? ['Gross', 'Discount', 'Tax', 'Service'] : ['Gross', 'Pending', 'Paid'],
+    chartData: filter === 'month'
+      ? [Number(summary?.gross_sales || 0), Number(summary?.discounts || 0), Number(summary?.taxes || 0), Number(summary?.services || 0)]
+      : [Number(summary?.gross_sales || 0), Number(summary?.pending_orders || 0), Number(summary?.paid_orders || 0)],
   }
 
-  // Animate values
+  const transactions = [
+    { id: 'TOTAL-ORDERS', time: '-', cashier: 'Semua staff', method: 'Semua', total: Number(summary?.total_orders || 0) },
+    { id: 'PAID-ORDERS', time: '-', cashier: 'Semua staff', method: 'Lunas', total: Number(summary?.paid_orders || 0) },
+    { id: 'PENDING-ORDERS', time: '-', cashier: 'Semua staff', method: 'Pending', total: Number(summary?.pending_orders || 0) },
+  ]
+
   useEffect(() => {
     const duration = 500
     const steps = 30
     const interval = duration / steps
-
-    const revenueStep = data.revenue / steps
-    const transStep = data.transactions / steps
-    const avgStep = data.average / steps
+    const revenueStep = Number(data.revenue) / steps
+    const transStep = Number(data.transactions) / steps
+    const avgStep = Number(data.average) / steps
 
     let current = 0
     const timer = setInterval(() => {
-      current++
+      current += 1
       setAnimatedRevenue(Math.floor(revenueStep * current))
       setAnimatedTransactions(Math.floor(transStep * current))
       setAnimatedAverage(Math.floor(avgStep * current))
 
       if (current >= steps) {
-        setAnimatedRevenue(data.revenue)
-        setAnimatedTransactions(data.transactions)
-        setAnimatedAverage(data.average)
+        setAnimatedRevenue(Number(data.revenue))
+        setAnimatedTransactions(Number(data.transactions))
+        setAnimatedAverage(Math.floor(Number(data.average)))
         clearInterval(timer)
       }
     }, interval)
 
     return () => clearInterval(timer)
-  }, [filter, data])
+  }, [data.average, data.revenue, data.transactions])
 
-  // Initialize Chart
   useEffect(() => {
     const loadChart = async () => {
       if (!chartRef.current) return
-
-      // Dynamically import Chart.js
       const { Chart, registerables } = await import('chart.js')
       Chart.register(...registerables)
 
       const ctx = chartRef.current.getContext('2d')
+      if (chartInstance.current) chartInstance.current.destroy()
 
-      // Destroy existing chart
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
-
-      // Gradient Fill
       const gradient = ctx.createLinearGradient(0, 0, 0, 400)
       gradient.addColorStop(0, 'rgba(27, 67, 50, 0.2)')
       gradient.addColorStop(1, 'rgba(27, 67, 50, 0)')
@@ -124,7 +104,7 @@ export function Reports() {
         data: {
           labels: data.chartLabels,
           datasets: [{
-            label: 'Pemasukan (Rp)',
+            label: 'Laporan',
             data: data.chartData,
             borderColor: '#1B4332',
             backgroundColor: gradient,
@@ -134,8 +114,8 @@ export function Reports() {
             pointRadius: 4,
             pointHoverRadius: 6,
             fill: true,
-            tension: 0.4
-          }]
+            tension: 0.4,
+          }],
         },
         options: {
           responsive: true,
@@ -144,112 +124,78 @@ export function Reports() {
             legend: { display: false },
             tooltip: {
               backgroundColor: '#1B4332',
-              titleFont: { family: 'Plus Jakarta Sans' },
-              bodyFont: { family: 'Plus Jakarta Sans' },
               padding: 10,
               cornerRadius: 8,
               callbacks: {
-                label: function (context) {
+                label(context) {
                   return formatRupiah(context.raw)
-                }
-              }
-            }
+                },
+              },
+            },
           },
           scales: {
             y: {
               beginAtZero: true,
-              grid: {
-                color: '#f3f4f6'
-              },
+              grid: { color: '#f3f4f6' },
               ticks: {
-                callback: function (value) {
-                  if (value >= 1000000) return (value / 1000000) + 'jt'
-                  if (value >= 1000) return (value / 1000) + 'rb'
+                callback(value) {
+                  if (value >= 1000000) return `${value / 1000000}jt`
+                  if (value >= 1000) return `${value / 1000}rb`
                   return value
                 },
-                font: { family: 'Plus Jakarta Sans', size: 10 },
-                color: '#9ca3af'
-              }
+                color: '#9ca3af',
+              },
             },
             x: {
               grid: { display: false },
-              ticks: {
-                font: { family: 'Plus Jakarta Sans', size: 10 },
-                color: '#9ca3af'
-              }
-            }
-          }
-        }
+              ticks: { color: '#9ca3af' },
+            },
+          },
+        },
       })
     }
 
     loadChart()
-
     return () => {
-      if (chartInstance.current) {
-        chartInstance.current.destroy()
-      }
+      if (chartInstance.current) chartInstance.current.destroy()
     }
-  }, [filter, data])
+  }, [data.chartData, data.chartLabels])
 
-  // Sort employees by total
-  const sortedEmployees = [...data.employees].sort((a, b) => b.total - a.total)
-  const maxTotal = sortedEmployees[0]?.total || 1
-
-  // Filter transactions
-  const filteredTransactions = transactions.filter(trx =>
-    trx.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    trx.cashier.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredTransactions = transactions.filter((trx) => {
+    const keyword = searchQuery.toLowerCase()
+    return trx.id.toLowerCase().includes(keyword) || trx.cashier.toLowerCase().includes(keyword)
+  })
 
   return (
     <DashboardLayout>
-      {/* Header */}
+      {error ? <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div> : null}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 -mt-4 mb-6">
         <div>
           <h2 className="text-xl font-bold text-dark">Laporan & Keuangan</h2>
           <p className="text-xs text-gray-500">Analisa penjualan toko dan kinerja tim</p>
         </div>
 
-        {/* Date Filter */}
         <div className="flex items-center bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
-          <button
-            onClick={() => setFilter('today')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${filter === 'today'
-                ? 'bg-gray-100 text-dark shadow-sm'
-                : 'text-gray-500 hover:bg-gray-50'
+          {[
+            { id: 'today', label: 'Hari Ini' },
+            { id: 'week', label: 'Minggu Ini' },
+            { id: 'month', label: 'Bulan Ini' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                filter === tab.id ? 'bg-gray-100 text-dark shadow-sm' : 'text-gray-500 hover:bg-gray-50'
               }`}
-          >
-            Hari Ini
-          </button>
-          <button
-            onClick={() => setFilter('week')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${filter === 'week'
-                ? 'bg-gray-100 text-dark shadow-sm'
-                : 'text-gray-500 hover:bg-gray-50'
-              }`}
-          >
-            Minggu Ini
-          </button>
-          <button
-            onClick={() => setFilter('month')}
-            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${filter === 'month'
-                ? 'bg-gray-100 text-dark shadow-sm'
-                : 'text-gray-500 hover:bg-gray-50'
-              }`}
-          >
-            Bulan Ini
-          </button>
-          <div className="w-px h-4 bg-gray-200 mx-1"></div>
-          <button className="px-2 py-1.5 text-gray-400 hover:text-primary text-xs">
-            <i className="fa-regular fa-calendar"></i>
-          </button>
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 1. SUMMARY CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Omzet */}
         <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-secondary/30 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
           <div className="relative z-10">
@@ -261,12 +207,11 @@ export function Reports() {
             </div>
             <h3 className="text-2xl font-extrabold text-dark mb-1">{formatRupiah(animatedRevenue)}</h3>
             <p className="text-xs text-green-600 font-medium flex items-center gap-1">
-              <i className="fa-solid fa-arrow-trend-up"></i> +12% <span className="text-gray-400 font-normal">vs periode lalu</span>
+              <i className="fa-solid fa-arrow-trend-up"></i> {summary?.paid_orders || 0} pesanan lunas
             </p>
           </div>
         </div>
 
-        {/* Transaksi */}
         <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
           <div className="relative z-10">
@@ -278,12 +223,11 @@ export function Reports() {
             </div>
             <h3 className="text-2xl font-extrabold text-dark mb-1">{animatedTransactions}</h3>
             <p className="text-xs text-blue-600 font-medium flex items-center gap-1">
-              <i className="fa-solid fa-check-double"></i> +5 <span className="text-gray-400 font-normal">pesanan baru</span>
+              <i className="fa-solid fa-check-double"></i> {summary?.pending_orders || 0} pesanan pending
             </p>
           </div>
         </div>
 
-        {/* Rata-rata */}
         <div className="bg-white p-5 rounded-2xl shadow-card border border-gray-100 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-24 h-24 bg-orange-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
           <div className="relative z-10">
@@ -294,21 +238,17 @@ export function Reports() {
               <p className="text-xs font-bold text-gray-500 uppercase">Rata-rata Order</p>
             </div>
             <h3 className="text-2xl font-extrabold text-dark mb-1">{formatRupiah(animatedAverage)}</h3>
-            <p className="text-xs text-gray-400 font-normal">
-              Per pelanggan per transaksi
-            </p>
+            <p className="text-xs text-gray-400 font-normal">Per pesanan yang sudah dibayar</p>
           </div>
         </div>
       </div>
 
-      {/* 2. CHART & EMPLOYEE STATS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-        {/* Chart Section */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-card border border-gray-100">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-bold text-dark text-lg">Grafik Penjualan</h3>
             <button className="text-xs text-primary font-bold border border-primary/20 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors">
-              Download PDF
+              Ringkasan
             </button>
           </div>
           <div className="relative h-64 w-full">
@@ -316,93 +256,44 @@ export function Reports() {
           </div>
         </div>
 
-        {/* Employee Performance */}
         <div className="bg-white p-6 rounded-2xl shadow-card border border-gray-100 flex flex-col">
-          <h3 className="font-bold text-dark text-lg mb-1">Top Performa Kasir</h3>
-          <p className="text-xs text-gray-400 mb-6">Berdasarkan total nominal transaksi.</p>
-
-          <div className="flex-1 overflow-y-auto pr-2 space-y-4">
-            {sortedEmployees.map((emp, index) => {
-              const rankColor = index === 0 ? 'text-yellow-500' : index === 1 ? 'text-gray-400' : 'text-orange-700'
-              const percent = Math.round((emp.total / maxTotal) * 100)
-
-              return (
-                <div key={emp.name} className="flex items-center gap-3 group">
-                  <div className={`w-6 text-center font-bold text-sm ${rankColor}`}>#{index + 1}</div>
-                  <div className="relative">
-                    <img src={emp.avatar} alt={emp.name} className="w-10 h-10 rounded-full object-cover border border-gray-100" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between mb-1">
-                      <h4 className="font-bold text-sm text-dark truncate">{emp.name}</h4>
-                      <span className="font-bold text-xs text-primary">{formatRupiah(emp.total)}</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-primary h-1.5 rounded-full" style={{ width: `${percent}%` }}></div>
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-1">{emp.transactions} Transaksi</p>
-                  </div>
-                </div>
-              )
-            })}
+          <h3 className="font-bold text-dark text-lg mb-1">Komponen Pendapatan</h3>
+          <p className="text-xs text-gray-400 mb-6">Ringkasan nilai yang disediakan backend.</p>
+          <div className="space-y-4 text-sm">
+            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Gross Sales</span><span className="font-bold text-dark">{formatRupiah(summary?.gross_sales)}</span></div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Discount</span><span className="font-bold text-dark">{formatRupiah(summary?.discounts)}</span></div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Tax</span><span className="font-bold text-dark">{formatRupiah(summary?.taxes)}</span></div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Service</span><span className="font-bold text-dark">{formatRupiah(summary?.services)}</span></div>
           </div>
-
-          <button className="w-full mt-6 py-2.5 text-xs font-bold text-gray-500 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-            Lihat Detail Absensi
-          </button>
+          <div className="mt-6 text-xs text-gray-400">{loading ? 'Memuat data laporan...' : 'Jika butuh grafik per kasir/periode detail, endpoint backend perlu ditambah.'}</div>
         </div>
       </div>
 
-      {/* 3. RECENT TRANSACTIONS TABLE */}
       <div className="bg-white rounded-2xl shadow-card border border-gray-100 overflow-hidden">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-bold text-dark text-lg">Riwayat Transaksi Terakhir</h3>
+          <h3 className="font-bold text-dark text-lg">Ringkasan Transaksi</h3>
           <div className="relative">
-            <i className="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+            <i className="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
             <input
               type="text"
-              placeholder="Cari No. Order..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 pr-4 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-primary"
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Cari ringkasan..."
+              className="w-full sm:w-64 bg-gray-50 border border-gray-200 pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary"
             />
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="p-6 pt-0">
           <Table
             columns={[
-              {
-                header: 'No. Order',
-                accessor: (trx) => <span className="font-mono text-xs font-bold text-primary">{trx.id}</span>
-              },
-              {
-                header: 'Waktu',
-                accessor: (trx) => <span className="text-gray-500">{trx.time}</span>
-              },
-              {
-                header: 'Kasir',
-                accessor: (trx) => <span className="font-bold text-dark">{trx.cashier}</span>
-              },
-              {
-                header: 'Metode',
-                accessor: (trx) => (
-                  <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${trx.method === 'QRIS'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'bg-green-50 text-green-600'
-                    }`}>
-                    {trx.method}
-                  </span>
-                )
-              },
-              {
-                header: 'Total',
-                className: 'text-right',
-                cellClassName: 'text-right',
-                accessor: (trx) => <span className="font-bold text-dark">{formatRupiah(trx.total)}</span>
-              }
+              { header: 'Kode', accessor: (trx) => <span className="font-mono text-xs font-bold text-primary">{trx.id}</span> },
+              { header: 'Waktu', accessor: (trx) => trx.time },
+              { header: 'PIC', accessor: (trx) => trx.cashier },
+              { header: 'Metode', accessor: (trx) => trx.method },
+              { header: 'Nilai', accessor: (trx) => <span className="font-bold text-dark">{typeof trx.total === 'number' ? formatRupiah(trx.total) : trx.total}</span> },
             ]}
             data={filteredTransactions}
-            keyExtractor={(trx) => trx.id}
+            isLoading={loading}
           />
         </div>
       </div>
