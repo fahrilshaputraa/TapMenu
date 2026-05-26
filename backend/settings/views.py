@@ -1,6 +1,6 @@
 from rest_framework import permissions, viewsets
 
-from restaurants.utils import OWNER_ACCESS_ROLES, ensure_roles, require_user_restaurant
+from restaurants.utils import OWNER_ACCESS_ROLES, STAFF_ACCESS_ROLES, ensure_roles, require_user_restaurant
 
 from .models import Table, Voucher
 from .serializers import TableSerializer, VoucherSerializer
@@ -26,6 +26,11 @@ class TableViewSet(RestaurantScopedViewSet):
 
 class VoucherViewSet(RestaurantScopedViewSet):
 	serializer_class = VoucherSerializer
+
+	def get_restaurant(self):
+		allowed_roles = STAFF_ACCESS_ROLES if self.action in {'list', 'retrieve'} else OWNER_ACCESS_ROLES
+		ensure_roles(self.request.user, allowed_roles)
+		return require_user_restaurant(self.request.user)
 
 	def get_queryset(self):
 		return Voucher.objects.filter(restaurant=self.get_restaurant()).order_by('code')

@@ -1,35 +1,51 @@
 import { useEffect, useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
-import { api } from '../../services/api'
+import { loadMenuAppearance, saveMenuAppearance } from '../../services/menuAppearance'
+import { loadStoreSettings } from '../../services/storeSettings'
+import {
+  buildMenuAppearancePayload,
+  createDefaultMenuAppearanceSettings,
+  getActiveMenuColor,
+  getMenuFontFamily,
+  getMenuPatternStyle,
+  getMenuTitleFontFamily,
+  mapMenuAppearanceToSettings,
+  MENU_BG_PATTERN_OPTIONS,
+  MENU_BUTTON_STYLE_OPTIONS,
+  MENU_FONT_OPTIONS,
+  MENU_HEADER_OPTIONS,
+  MENU_LAYOUT_OPTIONS,
+  MENU_SHADOW_CLASSES,
+  MENU_THEME_COLORS,
+  DEFAULT_BG_COLOR,
+  shouldUseStoreDescriptionAsMenuSubtitle,
+  shouldUseStoreNameAsMenuTitle,
+} from '../../utils/menuAppearance'
+
+const DEFAULTS = createDefaultMenuAppearanceSettings()
 
 export function MenuAppearance() {
-  // State for all settings
-  const [title, setTitle] = useState('Warung Bu Dewi')
-  const [description, setDescription] = useState('Rasanya seperti masakan ibu')
-  const [themeColor, setThemeColor] = useState('#1B4332')
+  const [title, setTitle] = useState(DEFAULTS.title)
+  const [description, setDescription] = useState(DEFAULTS.description)
+  const [themeColor, setThemeColor] = useState(DEFAULTS.themeColor)
   const [customColor, setCustomColor] = useState(null)
-  const [fontStyle, setFontStyle] = useState('Plus Jakarta Sans')
-  const [bgPattern, setBgPattern] = useState('pattern-none')
-  const [bgColor, setBgColor] = useState('#F7F5F2')
-  const [layoutStyle, setLayoutStyle] = useState('list')
-  const [headerStyle, setHeaderStyle] = useState('standard')
-  const [showBanner, setShowBanner] = useState(true)
-  const [showProfile, setShowProfile] = useState(true)
-  const [showImages, setShowImages] = useState(true)
-  const [showDesc, setShowDesc] = useState(true)
-  const [radius, setRadius] = useState(12)
-  const [shadow, setShadow] = useState(1)
-  const [btnStyle, setBtnStyle] = useState('circle')
-  const [logoImg, setLogoImg] = useState('https://cdn-icons-png.flaticon.com/512/2921/2921822.png')
-  const [bannerImg, setBannerImg] = useState('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80')
+  const [fontStyle, setFontStyle] = useState(DEFAULTS.fontStyle)
+  const [bgPattern, setBgPattern] = useState(DEFAULTS.bgPattern)
+  const [bgColor, setBgColor] = useState(DEFAULTS.bgColor)
+  const [layoutStyle, setLayoutStyle] = useState(DEFAULTS.layoutStyle)
+  const [headerStyle, setHeaderStyle] = useState(DEFAULTS.headerStyle)
+  const [showBanner, setShowBanner] = useState(DEFAULTS.showBanner)
+  const [showProfile, setShowProfile] = useState(DEFAULTS.showProfile)
+  const [showImages, setShowImages] = useState(DEFAULTS.showImages)
+  const [showDesc, setShowDesc] = useState(DEFAULTS.showDesc)
+  const [radius, setRadius] = useState(DEFAULTS.radius)
+  const [shadow, setShadow] = useState(DEFAULTS.shadow)
+  const [btnStyle, setBtnStyle] = useState(DEFAULTS.btnStyle)
+  const [logoImg, setLogoImg] = useState(DEFAULTS.logoImg)
+  const [bannerImg, setBannerImg] = useState(DEFAULTS.bannerImg)
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [error, setError] = useState('')
-
-  const colors = [
-    '#1B4332', '#E07A5F', '#2563EB', '#DC2626',
-    '#DB2777', '#7C3AED', '#111827', '#78350F'
-  ]
 
   const handleImageUpload = (e, setImage) => {
     const file = e.target.files[0]
@@ -55,14 +71,38 @@ export function MenuAppearance() {
 
     async function loadAppearance() {
       try {
-        const payload = await api.get('/api/v1/restaurants/appearance/')
+        const [payload, store] = await Promise.all([
+          loadMenuAppearance(),
+          loadStoreSettings().catch(() => null),
+        ])
         if (!active) return
-        setTitle(payload.hero_title || 'Warung Bu Dewi')
-        setDescription(payload.hero_subtitle || 'Rasanya seperti masakan ibu')
-        setThemeColor(payload.primary_color || '#1B4332')
+        const settings = mapMenuAppearanceToSettings(payload)
+        const fallbackTitle = store?.name || DEFAULTS.title
+        const fallbackDescription = store?.description || DEFAULTS.description
+
+        setTitle(shouldUseStoreNameAsMenuTitle(settings.title) ? fallbackTitle : settings.title)
+        setDescription(
+          shouldUseStoreDescriptionAsMenuSubtitle(settings.description)
+            ? fallbackDescription
+            : settings.description,
+        )
+        setThemeColor(settings.themeColor || DEFAULTS.themeColor)
         setCustomColor(null)
-        if (payload.logo_url) setLogoImg(payload.logo_url)
-        if (payload.cover_image_url) setBannerImg(payload.cover_image_url)
+        setFontStyle(settings.fontStyle || DEFAULTS.fontStyle)
+        setBgPattern(settings.bgPattern || DEFAULTS.bgPattern)
+        setBgColor(settings.bgColor || DEFAULTS.bgColor)
+        setLayoutStyle(settings.layoutStyle || DEFAULTS.layoutStyle)
+        setHeaderStyle(settings.headerStyle || DEFAULTS.headerStyle)
+        setShowBanner(settings.showBanner ?? DEFAULTS.showBanner)
+        setShowProfile(settings.showProfile ?? DEFAULTS.showProfile)
+        setShowImages(settings.showImages ?? DEFAULTS.showImages)
+        setShowDesc(settings.showDesc ?? DEFAULTS.showDesc)
+        setRadius(settings.radius ?? DEFAULTS.radius)
+        setShadow(settings.shadow ?? DEFAULTS.shadow)
+        setBtnStyle(settings.btnStyle || DEFAULTS.btnStyle)
+        setLogoImg(settings.logoImg || store?.appearance?.logo_url || DEFAULTS.logoImg)
+        setBannerImg(settings.bannerImg || store?.appearance?.cover_image_url || DEFAULTS.bannerImg)
+        setError('')
       } catch (requestError) {
         if (active) setError(requestError.message)
       }
@@ -75,22 +115,24 @@ export function MenuAppearance() {
   }, [])
 
   const resetTheme = () => {
-    setTitle('Warung Bu Dewi')
-    setDescription('Rasanya seperti masakan ibu')
-    setThemeColor('#1B4332')
+    setTitle(DEFAULTS.title)
+    setDescription(DEFAULTS.description)
+    setThemeColor(DEFAULTS.themeColor)
     setCustomColor(null)
-    setFontStyle('Plus Jakarta Sans')
-    setBgPattern('pattern-none')
-    setBgColor('#F7F5F2')
-    setLayoutStyle('list')
-    setHeaderStyle('standard')
-    setShowBanner(true)
-    setShowProfile(true)
-    setShowImages(true)
-    setShowDesc(true)
-    setRadius(12)
-    setShadow(1)
-    setBtnStyle('circle')
+    setFontStyle(DEFAULTS.fontStyle)
+    setBgPattern(DEFAULTS.bgPattern)
+    setBgColor(DEFAULTS.bgColor)
+    setLayoutStyle(DEFAULTS.layoutStyle)
+    setHeaderStyle(DEFAULTS.headerStyle)
+    setShowBanner(DEFAULTS.showBanner)
+    setShowProfile(DEFAULTS.showProfile)
+    setShowImages(DEFAULTS.showImages)
+    setShowDesc(DEFAULTS.showDesc)
+    setRadius(DEFAULTS.radius)
+    setShadow(DEFAULTS.shadow)
+    setBtnStyle(DEFAULTS.btnStyle)
+    setLogoImg(DEFAULTS.logoImg)
+    setBannerImg(DEFAULTS.bannerImg)
   }
 
   const saveTheme = async () => {
@@ -98,14 +140,26 @@ export function MenuAppearance() {
     setError('')
 
     try {
-      await api.put('/api/v1/restaurants/appearance/', {
-        hero_title: title,
-        hero_subtitle: description,
-        primary_color: activeColor,
-        accent_color: '#E07A5F',
-        logo_url: logoImg.startsWith('data:') ? '' : logoImg,
-        cover_image_url: bannerImg.startsWith('data:') ? '' : bannerImg,
-      })
+      await saveMenuAppearance(buildMenuAppearancePayload({
+        title,
+        description,
+        themeColor,
+        customColor,
+        fontStyle,
+        bgPattern,
+        bgColor,
+        layoutStyle,
+        headerStyle,
+        showBanner,
+        showProfile,
+        showImages,
+        showDesc,
+        radius,
+        shadow,
+        btnStyle,
+        logoImg,
+        bannerImg,
+      }))
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
     } catch (requestError) {
@@ -115,24 +169,8 @@ export function MenuAppearance() {
     }
   }
 
-  const activeColor = customColor || themeColor || '#1B4332'
-  const shadowClasses = ['shadow-none', 'shadow-sm', 'shadow', 'shadow-md']
-
-  // Get font family for preview
-  const getFontFamily = () => {
-    switch(fontStyle) {
-      case 'Inter': return '"Inter", sans-serif'
-      case 'Poppins': return '"Poppins", sans-serif'
-      case 'Lato': return '"Lato", sans-serif'
-      case 'Playfair Display': return '"Playfair Display", serif'
-      default: return '"Plus Jakarta Sans", sans-serif'
-    }
-  }
-
-  const getTitleFontFamily = () => {
-    if (fontStyle === 'Playfair Display') return '"Playfair Display", serif'
-    return getFontFamily()
-  }
+  const activeColor = getActiveMenuColor(themeColor, customColor)
+  const previewPatternStyle = getMenuPatternStyle(bgPattern, bgColor)
 
   return (
     <DashboardLayout>
@@ -242,7 +280,7 @@ export function MenuAppearance() {
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase mb-3 block">Warna Aksen Toko</label>
                 <div className="grid grid-cols-5 sm:grid-cols-9 gap-3">
-                  {colors.map((color) => (
+                  {MENU_THEME_COLORS.map((color) => (
                     <label key={color} className="cursor-pointer" style={{ color }}>
                       <input
                         type="radio"
@@ -285,12 +323,7 @@ export function MenuAppearance() {
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase mb-3 block">Jenis Font</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {[
-                    { value: 'Plus Jakarta Sans', label: 'Modern', sub: 'Jakarta Sans', font: 'font-sans' },
-                    { value: 'Inter', label: 'Clean', sub: 'Inter', font: 'font-inter' },
-                    { value: 'Poppins', label: 'Friendly', sub: 'Poppins', font: 'font-poppins' },
-                    { value: 'Lato', label: 'Professional', sub: 'Lato', font: 'font-lato' },
-                  ].map((f) => (
+                  {MENU_FONT_OPTIONS.map((f) => (
                     <label key={f.value} className="flex items-center gap-3 p-3 border border-gray-100 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
                       <input
                         type="radio"
@@ -334,11 +367,7 @@ export function MenuAppearance() {
             <div className="space-y-4">
               {/* Pattern Selection */}
               <div className="grid grid-cols-3 gap-3">
-                {[
-                  { value: 'pattern-none', label: 'Polos' },
-                  { value: 'pattern-dots', label: 'Bintik' },
-                  { value: 'pattern-grid', label: 'Kotak' },
-                ].map((p) => (
+                {MENU_BG_PATTERN_OPTIONS.map((p) => (
                   <label key={p.value} className="cursor-pointer">
                     <input
                       type="radio"
@@ -368,7 +397,7 @@ export function MenuAppearance() {
                     className="w-8 h-8 rounded cursor-pointer border border-gray-200 p-0.5"
                   />
                   <button
-                    onClick={() => setBgColor('#F7F5F2')}
+                    onClick={() => setBgColor(DEFAULT_BG_COLOR)}
                     className="text-xs text-primary font-bold hover:underline"
                   >
                     Reset
@@ -384,10 +413,7 @@ export function MenuAppearance() {
             <div className="bg-white p-6 rounded-2xl shadow-card border border-gray-100">
               <h3 className="font-bold text-dark mb-4 text-sm">Tata Letak Menu</h3>
               <div className="grid grid-cols-2 gap-3">
-                {[
-                  { value: 'list', icon: 'fa-list', label: 'List' },
-                  { value: 'grid', icon: 'fa-border-all', label: 'Grid' },
-                ].map((l) => (
+                {MENU_LAYOUT_OPTIONS.map((l) => (
                   <label key={l.value} className="cursor-pointer">
                     <input
                       type="radio"
@@ -413,10 +439,7 @@ export function MenuAppearance() {
               <h3 className="font-bold text-dark mb-4 text-sm">Header & Banner</h3>
               <div className="space-y-4">
                 <div className="flex gap-3">
-                  {[
-                    { value: 'standard', label: 'Kiri' },
-                    { value: 'center', label: 'Tengah' },
-                  ].map((h) => (
+                  {MENU_HEADER_OPTIONS.map((h) => (
                     <label key={h.value} className="flex-1 cursor-pointer">
                       <input
                         type="radio"
@@ -533,11 +556,7 @@ export function MenuAppearance() {
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Gaya Tombol Tambah</label>
                 <div className="flex gap-2">
-                  {[
-                    { value: 'circle', label: 'Bulat' },
-                    { value: 'square', label: 'Kotak' },
-                    { value: 'pill', label: 'Pill (+ Tambah)' },
-                  ].map((b) => (
+                  {MENU_BUTTON_STYLE_OPTIONS.map((b) => (
                     <button
                       key={b.value}
                       onClick={() => setBtnStyle(b.value)}
@@ -566,18 +585,22 @@ export function MenuAppearance() {
 
               {/* Screen Content */}
               <div
-                className={`w-full h-full overflow-y-auto flex flex-col transition-all duration-300 ${bgPattern}`}
-                style={{ backgroundColor: bgColor, fontFamily: getFontFamily() }}
+                className="w-full h-full overflow-y-auto flex flex-col transition-all duration-300"
+                style={{ ...previewPatternStyle, fontFamily: getMenuFontFamily(fontStyle) }}
               >
 
                 {/* Header Area */}
-                <div className="relative shrink-0 bg-white transition-all duration-300 h-40">
-                  <img
-                    src={bannerImg}
-                    className="w-full h-full object-cover transition-all duration-300"
-                    style={{ opacity: showBanner ? 0.9 : 0 }}
-                    alt="Banner"
-                  />
+                <div
+                  className={`relative shrink-0 transition-all duration-300 ${showBanner ? 'h-40 bg-white' : 'min-h-[180px]'}`}
+                  style={showBanner ? undefined : previewPatternStyle}
+                >
+                  {showBanner ? (
+                    <img
+                      src={bannerImg}
+                      className="w-full h-full object-cover transition-all duration-300"
+                      alt="Banner"
+                    />
+                  ) : null}
 
                   {/* Logo Container */}
                   {showProfile && (
@@ -595,11 +618,13 @@ export function MenuAppearance() {
 
                 {/* Info Text */}
                 <div className={`px-4 pb-2 transition-all duration-300 ${
-                  headerStyle === 'center' ? 'pt-10 text-center' : 'pt-8 text-left'
+                  headerStyle === 'center'
+                    ? `${showBanner ? 'pt-10' : 'pt-4'} text-center`
+                    : `${showBanner ? 'pt-8' : 'pt-4'} text-left`
                 }`}>
                   <h3
                     className="font-bold text-lg leading-tight"
-                    style={{ fontFamily: getTitleFontFamily() }}
+                    style={{ fontFamily: getMenuTitleFontFamily(fontStyle) }}
                   >
                     {title || 'Nama Toko'}
                   </h3>
@@ -632,7 +657,7 @@ export function MenuAppearance() {
                   ].map((item, idx) => (
                     <div
                       key={idx}
-                      className={`bg-white border border-gray-50 relative group ${shadowClasses[shadow]} ${
+                      className={`bg-white border border-gray-50 relative group ${MENU_SHADOW_CLASSES[shadow]} ${
                         layoutStyle === 'grid'
                           ? 'p-2.5 flex flex-col gap-2 h-full'
                           : 'p-3 flex gap-3 items-center'
@@ -689,21 +714,6 @@ export function MenuAppearance() {
         </div>
       </div>
 
-      <style>{`
-        .pattern-dots {
-          background-image: radial-gradient(currentColor 1px, transparent 1px);
-          background-size: 20px 20px;
-          color: rgba(0,0,0,0.1);
-        }
-        .pattern-grid {
-          background-image: linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px);
-          background-size: 20px 20px;
-          color: rgba(0,0,0,0.05);
-        }
-        .pattern-none {
-          background-image: none;
-        }
-      `}</style>
     </DashboardLayout>
   )
 }

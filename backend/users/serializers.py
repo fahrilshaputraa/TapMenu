@@ -142,7 +142,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
         next_number = restaurant.team_members.exclude(employee_code__isnull=True).count() + 1
         prefix = 'KSR' if validated_data['role'] == UserRole.CASHIER else 'STA'
-        employee_code = f"{prefix}-{restaurant.id:02d}{next_number:03d}"
+        restaurant_code = str(restaurant.id).replace('-', '')[:6].upper()
+        employee_code = f'{prefix}-{restaurant_code}{next_number:03d}'
 
         user = User.objects.create_user(
             password=password or pin_code or 'tapmenu123',

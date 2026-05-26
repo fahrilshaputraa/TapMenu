@@ -2,18 +2,76 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Table } from '../../components/Table'
-import { api } from '../../services/api'
 import { getRoleLabel } from '../../services/auth'
+import {
+  createEmployee,
+  deleteEmployee as deleteEmployeeRequest,
+  loadEmployees,
+  updateEmployee,
+  updateEmployeeStatus,
+} from '../../services/employees'
+import {
+  buildEmployeePayload,
+  createDefaultEmployeeFormData,
+  createEmployeeFormData,
+  filterEmployees,
+  getEmployeeAvatarUrl,
+  getEmployeeRowClass,
+  getEmployeeStats,
+  ROLE_OPTIONS,
+} from '../../utils/employees'
 
-const ROLE_OPTIONS = [
-  { label: 'Manager', value: 2 },
-  { label: 'Cashier', value: 3 },
-  { label: 'Kitchen', value: 4 },
-]
+const EmployeeInfoCell = ({ employee }) => (
+  <div className="flex items-center gap-4">
+    <img src={getEmployeeAvatarUrl(employee)} alt={employee.full_name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+    <div>
+      <div className="font-bold text-dark text-sm">{employee.full_name}</div>
+      <div className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5 text-primary/80">{getRoleLabel(employee.role)}</div>
+    </div>
+  </div>
+)
 
-function getAvatarUrl(employee) {
-  return `https://i.pravatar.cc/150?u=${employee.email || employee.id}`
-}
+const EmployeeCodeCell = ({ employeeCode }) => (
+  <span className="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded border border-gray-200">{employeeCode || '-'}</span>
+)
+
+const PinAccessCell = ({ employee, showPin, togglePinVisibility }) => (
+  <div className="flex items-center gap-3 group/pin">
+    <span className="font-mono font-bold text-dark text-sm tracking-[0.2em]">{showPin[employee.id] ? employee.pin_code || '------' : '******'}</span>
+    <button onClick={() => togglePinVisibility(employee.id)} className="text-gray-300 hover:text-primary transition-colors" title="Lihat PIN">
+      <i className={`fa-regular ${showPin[employee.id] ? 'fa-eye-slash' : 'fa-eye'} text-xs`}></i>
+    </button>
+  </div>
+)
+
+const LoginStatusCell = ({ employee, toggleStatus }) => (
+  <div className="flex items-center gap-3">
+    <div className="relative inline-block w-9 align-middle select-none">
+      <input
+        id={`status-toggle-${employee.id}`}
+        type="checkbox"
+        checked={employee.is_active}
+        onChange={() => toggleStatus(employee)}
+        className="peer absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary"
+      />
+      <label htmlFor={`status-toggle-${employee.id}`} className="block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300 peer-checked:bg-primary">
+        <span className="sr-only">Toggle Status</span>
+      </label>
+    </div>
+    {employee.is_active ? <span className="text-green-600 font-bold text-xs">Aktif</span> : <span className="text-gray-400 font-bold text-xs">Nonaktif</span>}
+  </div>
+)
+
+const ActionCell = ({ employee, handleOpenModal, handleDeleteEmployee }) => (
+  <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+    <button onClick={() => handleOpenModal(employee)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm">
+      <i className="fa-solid fa-pen text-xs"></i>
+    </button>
+    <button onClick={() => handleDeleteEmployee(employee.id)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm">
+      <i className="fa-solid fa-trash text-xs"></i>
+    </button>
+  </div>
+)
 
 export function Employee() {
   const [employees, setEmployees] = useState([])
@@ -24,24 +82,18 @@ export function Employee() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [formData, setFormData] = useState({
-    full_name: '',
-    email: '',
-    phone_number: '',
-    role: 3,
-    pin_code: '',
-    password: '',
-    is_active: true,
-  })
+  const [formData, setFormData] = useState(createDefaultEmployeeFormData())
 
   useEffect(() => {
     let active = true
 
-    async function loadEmployees() {
+    async function fetchEmployees() {
       try {
-        const payload = await api.get('/api/v1/auth/employees/')
-        const results = Array.isArray(payload?.results) ? payload.results : payload
-        if (active) setEmployees(results || [])
+        const results = await loadEmployees()
+        if (active) {
+          setEmployees(results)
+          setError('')
+        }
       } catch (requestError) {
         if (active) setError(requestError.message)
       } finally {
@@ -49,49 +101,20 @@ export function Employee() {
       }
     }
 
-    loadEmployees()
+    fetchEmployees()
     return () => {
       active = false
     }
   }, [])
 
-  const filteredEmployees = useMemo(() => {
-    const keyword = searchQuery.toLowerCase()
-    return employees.filter((employee) => {
-      return (
-        String(employee.full_name || '').toLowerCase().includes(keyword) ||
-        String(employee.email || '').toLowerCase().includes(keyword) ||
-        String(employee.employee_code || '').toLowerCase().includes(keyword)
-      )
-    })
-  }, [employees, searchQuery])
+  const filteredEmployees = useMemo(() => filterEmployees(employees, searchQuery), [employees, searchQuery])
 
-  const activeCount = employees.filter((employee) => employee.is_active).length
+  const { activeCount } = useMemo(() => getEmployeeStats(employees), [employees])
 
   const handleOpenModal = (employee = null) => {
     setError('')
     setEditingEmployee(employee)
-    if (employee) {
-      setFormData({
-        full_name: employee.full_name || '',
-        email: employee.email || '',
-        phone_number: employee.phone_number || '',
-        role: employee.role || 3,
-        pin_code: '',
-        password: '',
-        is_active: employee.is_active,
-      })
-    } else {
-      setFormData({
-        full_name: '',
-        email: '',
-        phone_number: '',
-        role: 3,
-        pin_code: '',
-        password: '',
-        is_active: true,
-      })
-    }
+    setFormData(createEmployeeFormData(employee))
     setShowModal(true)
   }
 
@@ -104,22 +127,13 @@ export function Employee() {
     setSaving(true)
     setError('')
 
-    const payload = {
-      full_name: formData.full_name,
-      email: formData.email,
-      phone_number: formData.phone_number,
-      role: Number(formData.role),
-      is_active: formData.is_active,
-      ...(formData.pin_code ? { pin_code: formData.pin_code } : {}),
-      ...(formData.password ? { password: formData.password } : {}),
-    }
-
     try {
+      const payload = buildEmployeePayload(formData)
       if (editingEmployee) {
-        const updated = await api.patch(`/api/v1/auth/employees/${editingEmployee.id}/`, payload)
+        const updated = await updateEmployee(editingEmployee.id, payload)
         setEmployees((current) => current.map((employee) => (employee.id === editingEmployee.id ? updated : employee)))
       } else {
-        const created = await api.post('/api/v1/auth/employees/', payload)
+        const created = await createEmployee(payload)
         setEmployees((current) => [created, ...current])
       }
       setShowModal(false)
@@ -130,11 +144,12 @@ export function Employee() {
     }
   }
 
-  const deleteEmployee = async (id) => {
+  const handleDeleteEmployee = async (id) => {
     if (!window.confirm('Hapus karyawan ini?')) return
+    if (!globalThis.confirm('Hapus karyawan ini?')) return
 
     try {
-      await api.delete(`/api/v1/auth/employees/${id}/`)
+      await deleteEmployeeRequest(id)
       setEmployees((current) => current.filter((employee) => employee.id !== id))
     } catch (requestError) {
       setError(requestError.message)
@@ -143,7 +158,7 @@ export function Employee() {
 
   const toggleStatus = async (employee) => {
     try {
-      const updated = await api.patch(`/api/v1/auth/employees/${employee.id}/`, { is_active: !employee.is_active })
+      const updated = await updateEmployeeStatus(employee.id, !employee.is_active)
       setEmployees((current) => current.map((item) => (item.id === employee.id ? updated : item)))
     } catch (requestError) {
       setError(requestError.message)
@@ -205,7 +220,7 @@ export function Employee() {
               className: 'w-1/3',
               accessor: (employee) => (
                 <div className="flex items-center gap-4">
-                  <img src={getAvatarUrl(employee)} alt={employee.full_name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                  <img src={getEmployeeAvatarUrl(employee)} alt={employee.full_name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
                   <div>
                     <div className="font-bold text-dark text-sm">{employee.full_name}</div>
                     <div className="text-[10px] text-gray-400 uppercase tracking-wide font-bold mt-0.5 text-primary/80">{getRoleLabel(employee.role)}</div>
@@ -254,14 +269,14 @@ export function Employee() {
                   <button onClick={() => handleOpenModal(employee)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm">
                     <i className="fa-solid fa-pen text-xs"></i>
                   </button>
-                  <button onClick={() => deleteEmployee(employee.id)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm">
+                  <button onClick={() => handleDeleteEmployee(employee.id)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm">
                     <i className="fa-solid fa-trash text-xs"></i>
                   </button>
                 </div>
               ),
             },
           ]}
-          data={filteredEmployees.map((employee) => ({ ...employee, _rowClass: !employee.is_active ? 'opacity-50 bg-gray-50' : '' }))}
+          data={filteredEmployees.map((employee) => ({ ...employee, _rowClass: getEmployeeRowClass(employee) }))}
           isLoading={loading}
           emptyState={
             <div className="flex flex-col items-center justify-center py-16 text-center">

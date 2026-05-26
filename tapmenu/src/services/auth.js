@@ -1,4 +1,10 @@
-import { api, AUTH_STORAGE_KEY, hasValidStoredAccessToken } from './api'
+import {
+  api,
+  AUTH_STORAGE_KEY,
+  CASHIER_SESSION_STORAGE_KEY,
+  hasValidStoredAccessToken,
+  registerRefreshHandler,
+} from './api'
 
 function persistAuth(payload) {
   if (!payload?.tokens || !payload?.user) return
@@ -10,13 +16,40 @@ export function getStoredAuth() {
   if (!raw) return null
   try {
     return JSON.parse(raw)
-  } catch (_error) {
+  } catch {
     return null
   }
 }
 
 export function clearStoredAuth() {
   localStorage.removeItem(AUTH_STORAGE_KEY)
+  localStorage.removeItem(CASHIER_SESSION_STORAGE_KEY)
+}
+
+export function persistStoredAuth(payload) {
+  persistAuth(payload)
+}
+
+export function setCashierSessionUnlocked(userId) {
+  if (!userId) return
+  localStorage.setItem(CASHIER_SESSION_STORAGE_KEY, JSON.stringify({ userId: String(userId), unlocked: true }))
+}
+
+export function hasUnlockedCashierSession(userId) {
+  if (!userId) return false
+
+  try {
+    const raw = localStorage.getItem(CASHIER_SESSION_STORAGE_KEY)
+    if (!raw) return false
+    const session = JSON.parse(raw)
+    return session?.unlocked === true && session?.userId === String(userId)
+  } catch {
+    return false
+  }
+}
+
+export function clearCashierSession() {
+  localStorage.removeItem(CASHIER_SESSION_STORAGE_KEY)
 }
 
 export function isAuthenticated() {
@@ -110,13 +143,66 @@ export async function requestPasswordReset(email) {
   return api.post('/api/v1/auth/forgot-password/', { email }, { auth: false })
 }
 
+export async function resetPassword({ email, token, newPassword }) {
+  return api.post(
+    '/api/v1/auth/reset-password/',
+    {
+      email,
+      token,
+      new_password: newPassword,
+    },
+    { auth: false },
+  )
+}
+
+let refreshPromise = null
+
+export async function refreshAccessToken() {
+  const auth = getStoredAuth()
+  const refresh = auth?.tokens?.refresh
+
+  if (!refresh) {
+    throw new Error('Missing refresh token.')
+  }
+
+  if (!refreshPromise) {
+    refreshPromise = api
+      .post('/api/v1/auth/refresh/', { refresh }, { auth: false })
+      .then((payload) => {
+        if (!payload?.access) {
+          throw new Error('Refresh token response did not include an access token.')
+        }
+
+        const nextAuth = {
+          ...auth,
+          tokens: {
+            ...auth.tokens,
+            access: payload.access,
+            ...(payload.refresh ? { refresh: payload.refresh } : {}),
+          },
+        }
+
+        persistAuth(nextAuth)
+        return nextAuth
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+
+  return refreshPromise
+}
+
 export async function logout() {
   const auth = getStoredAuth()
   if (auth?.tokens?.refresh) {
     try {
       await api.post('/api/v1/auth/logout/', { refresh: auth.tokens.refresh })
-    } catch (_error) {
+    } catch {
+      // Ignore logout failures and clear local auth regardless.
     }
   }
   clearStoredAuth()
 }
+
+registerRefreshHandler(refreshAccessToken)

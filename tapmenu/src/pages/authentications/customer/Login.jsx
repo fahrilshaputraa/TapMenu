@@ -1,54 +1,39 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login } from '../../../services/auth'
-
-const quickSteps = [
-  {
-    icon: 'fa-solid fa-qrcode',
-    title: 'Scan QR',
-    description: 'Masuk lewat kode meja atau link yang dibagikan kasir.'
-  },
-  {
-    icon: 'fa-solid fa-bowl-food',
-    title: 'Pilih Menu',
-    description: 'Tambah menu favorit ke keranjang dan atur jumlahnya.'
-  },
-  {
-    icon: 'fa-solid fa-receipt',
-    title: 'Pantau Status',
-    description: 'Lihat progres pesanan dan riwayat transaksi Anda.'
-  }
-]
+import { useFormHandler } from '../../../lib/formHelpers'
+import {
+  createCustomerLoginFormData,
+  customerLoginQuickSteps,
+  getCustomerLoginErrorMessage,
+  resolveCustomerLoginSecret,
+} from '../../../utils/auth'
 
 export function CustomerLogin() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
-  const [formData, setFormData] = useState({
-    email: '',
-    accessCode: '',
-    password: '',
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const {
+    formData,
+    error,
+    isSubmitting,
+    setIsSubmitting,
+    handleChange,
+    handleError,
+    resetErrors,
+  } = useFormHandler(createCustomerLoginFormData())
 
-  const handleChange = (event) => {
-    const { name, value } = event.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    setError('')
+    resetErrors()
     setIsSubmitting(true)
-    login(formData.email, formData.password || formData.accessCode || '')
-      .then(() => navigate('/order'))
-      .catch((err) => {
-        setError(err.message || 'Login gagal, gunakan email terdaftar.')
-      })
-      .finally(() => setIsSubmitting(false))
+    try {
+      await login(formData.email, resolveCustomerLoginSecret(formData))
+      navigate('/order')
+    } catch (err) {
+      handleError({ ...err, message: getCustomerLoginErrorMessage(err) })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleGuestCheckout = () => {
@@ -89,7 +74,7 @@ export function CustomerLogin() {
           <div className="bg-white/10 border border-white/20 rounded-3xl p-6 backdrop-blur space-y-5">
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-white/70">Cara Kerja</p>
             <div className="space-y-4">
-              {quickSteps.map((step) => (
+              {customerLoginQuickSteps.map((step) => (
                 <div key={step.title} className="flex gap-4">
                   <div className="w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
                     <i className={`${step.icon} text-lg`}></i>

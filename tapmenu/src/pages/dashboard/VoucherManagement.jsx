@@ -2,19 +2,25 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Modal } from '../../components/Modal'
-import { api } from '../../services/api'
-
-function toDateInput(value) {
-  if (!value) return ''
-  return String(value).slice(0, 10)
-}
-
-function toApiDate(value, endOfDay = false) {
-  if (!value) return null
-  return `${value}T${endOfDay ? '23:59:59' : '00:00:00'}`
-}
+import { getStoredAuth } from '../../services/auth'
+import {
+  createVoucher as createVoucherRequest,
+  deleteVoucher as deleteVoucherRequest,
+  loadVouchers,
+  toggleVoucherStatus,
+  updateVoucher as updateVoucherRequest,
+} from '../../services/vouchers'
+import {
+  buildVoucherPayload,
+  createDefaultVoucherFormData,
+  createVoucherFormData,
+  formatVoucherRupiah,
+  toDateInput,
+} from '../../utils/vouchers'
 
 export function VoucherManagement() {
+  const role = Number(getStoredAuth()?.user?.role)
+  const canManageVouchers = role === 1 || role === 2
   const [vouchers, setVouchers] = useState([])
   const [searchInput, setSearchInput] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -23,25 +29,14 @@ export function VoucherManagement() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [formData, setFormData] = useState({
-    code: '',
-    name: '',
-    discount_type: 'percentage',
-    amount: '',
-    minimum_spend: '',
-    max_discount: '',
-    valid_from: '',
-    valid_until: '',
-    is_active: true,
-  })
+  const [formData, setFormData] = useState(createDefaultVoucherFormData())
 
   useEffect(() => {
     let active = true
 
-    async function loadVouchers() {
+    async function fetchVouchers() {
       try {
-        const payload = await api.get('/api/v1/settings/vouchers/')
-        const results = Array.isArray(payload?.results) ? payload.results : payload
+        const results = await loadVouchers()
         if (active) setVouchers(results || [])
       } catch (requestError) {
         if (active) setError(requestError.message)
@@ -50,7 +45,7 @@ export function VoucherManagement() {
       }
     }
 
-    loadVouchers()
+    fetchVouchers()
     return () => {
       active = false
     }
@@ -68,17 +63,10 @@ export function VoucherManagement() {
     })
   }, [searchInput, statusFilter, vouchers])
 
-  const formatRupiah = (num) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      maximumFractionDigits: 0,
-    }).format(Number(num || 0))
-  }
-
   const toggleStatus = async (voucher) => {
+    if (!canManageVouchers) return
     try {
-      const updated = await api.patch(`/api/v1/settings/vouchers/${voucher.id}/`, { is_active: !voucher.is_active })
+      const updated = await toggleVoucherStatus(voucher)
       setVouchers((current) => current.map((item) => (item.id === voucher.id ? updated : item)))
     } catch (requestError) {
       setError(requestError.message)
@@ -86,38 +74,21 @@ export function VoucherManagement() {
   }
 
   const openAddModal = () => {
+    if (!canManageVouchers) return
     setEditingVoucher(null)
-    setFormData({
-      code: '',
-      name: '',
-      discount_type: 'percentage',
-      amount: '',
-      minimum_spend: '',
-      max_discount: '',
-      valid_from: '',
-      valid_until: '',
-      is_active: true,
-    })
+    setFormData(createDefaultVoucherFormData())
     setIsModalOpen(true)
   }
 
   const editVoucher = (voucher) => {
+    if (!canManageVouchers) return
     setEditingVoucher(voucher)
-    setFormData({
-      code: voucher.code || '',
-      name: voucher.name || '',
-      discount_type: voucher.discount_type || 'percentage',
-      amount: voucher.amount || '',
-      minimum_spend: voucher.minimum_spend || '',
-      max_discount: voucher.max_discount || '',
-      valid_from: toDateInput(voucher.valid_from),
-      valid_until: toDateInput(voucher.valid_until),
-      is_active: voucher.is_active,
-    })
+    setFormData(createVoucherFormData(voucher))
     setIsModalOpen(true)
   }
 
   const saveVoucher = async () => {
+    if (!canManageVouchers) return
     if (!formData.code || !formData.name || !formData.amount) {
       setError('Kode, nama voucher, dan nilai diskon wajib diisi.')
       return
@@ -125,24 +96,14 @@ export function VoucherManagement() {
 
     setSaving(true)
     setError('')
-    const payload = {
-      code: formData.code.toUpperCase(),
-      name: formData.name,
-      discount_type: formData.discount_type,
-      amount: Number(formData.amount),
-      minimum_spend: Number(formData.minimum_spend || 0),
-      max_discount: formData.max_discount ? Number(formData.max_discount) : null,
-      valid_from: toApiDate(formData.valid_from),
-      valid_until: toApiDate(formData.valid_until, true),
-      is_active: formData.is_active,
-    }
+    const payload = buildVoucherPayload(formData)
 
     try {
       if (editingVoucher) {
-        const updated = await api.put(`/api/v1/settings/vouchers/${editingVoucher.id}/`, payload)
+        const updated = await updateVoucherRequest(editingVoucher.id, payload)
         setVouchers((current) => current.map((voucher) => (voucher.id === editingVoucher.id ? updated : voucher)))
       } else {
-        const created = await api.post('/api/v1/settings/vouchers/', payload)
+        const created = await createVoucherRequest(payload)
         setVouchers((current) => [created, ...current])
       }
       setIsModalOpen(false)
@@ -154,10 +115,11 @@ export function VoucherManagement() {
   }
 
   const deleteVoucher = async (id) => {
+    if (!canManageVouchers) return
     if (!window.confirm('Hapus voucher ini secara permanen?')) return
 
     try {
-      await api.delete(`/api/v1/settings/vouchers/${id}/`)
+      await deleteVoucherRequest(id)
       setVouchers((current) => current.filter((voucher) => voucher.id !== id))
     } catch (requestError) {
       setError(requestError.message)
@@ -172,15 +134,19 @@ export function VoucherManagement() {
             <button className="md:hidden text-primary text-xl"><i className="fa-solid fa-bars"></i></button>
             <div>
               <h2 className="text-2xl font-bold text-dark tracking-tight">Voucher & Promo</h2>
-              <p className="text-xs text-gray-500 font-medium">Buat kode diskon untuk menarik pelanggan</p>
+              <p className="text-xs text-gray-500 font-medium">
+                {canManageVouchers ? 'Buat kode diskon untuk menarik pelanggan' : 'Lihat voucher aktif yang sedang berjalan'}
+              </p>
             </div>
           </div>
-          <button onClick={openAddModal} className="group relative px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-xl shadow-lg hover:bg-primaryLight transition-all flex items-center gap-2 overflow-hidden">
-            <span className="relative z-10 flex items-center gap-2">
-              <i className="fa-solid fa-plus"></i> Buat Voucher
-            </span>
-            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-          </button>
+          {canManageVouchers ? (
+            <button onClick={openAddModal} className="group relative px-6 py-2.5 bg-primary text-white text-sm font-bold rounded-xl shadow-lg hover:bg-primaryLight transition-all flex items-center gap-2 overflow-hidden">
+              <span className="relative z-10 flex items-center gap-2">
+                <i className="fa-solid fa-plus"></i> Buat Voucher
+              </span>
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            </button>
+          ) : null}
         </header>
 
         <div className="flex-1 overflow-y-auto p-6 lg:p-8 custom-scroll">
@@ -270,10 +236,10 @@ export function VoucherManagement() {
                               {voucher.discount_type === 'percentage' ? (
                                 <span className="text-blue-600 bg-blue-50 px-2 py-1 rounded text-xs font-bold border border-blue-100">{voucher.amount}% OFF</span>
                               ) : (
-                                <span className="text-orange-600 bg-orange-50 px-2 py-1 rounded text-xs font-bold border border-orange-100">{formatRupiah(voucher.amount)} OFF</span>
+                                <span className="text-orange-600 bg-orange-50 px-2 py-1 rounded text-xs font-bold border border-orange-100">{formatVoucherRupiah(voucher.amount)} OFF</span>
                               )}
                             </td>
-                            <td className="px-6 py-4 align-middle"><span className="text-sm font-medium text-gray-600">{formatRupiah(voucher.minimum_spend)}</span></td>
+                            <td className="px-6 py-4 align-middle"><span className="text-sm font-medium text-gray-600">{formatVoucherRupiah(voucher.minimum_spend)}</span></td>
                             <td className="px-6 py-4 align-middle"><span className="text-sm font-medium text-gray-600">{voucher.name}</span></td>
                             <td className="px-6 py-4 align-middle">
                               <div className="text-xs text-gray-500 font-medium flex flex-col">
@@ -283,22 +249,32 @@ export function VoucherManagement() {
                             </td>
                             <td className="px-6 py-4 align-middle text-center">
                               <div className="flex flex-col items-center gap-1">
-                                <div className="relative inline-block w-8 align-middle select-none">
-                                  <input type="checkbox" checked={voucher.is_active} onChange={() => toggleStatus(voucher)} className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary" />
-                                  <label onClick={() => toggleStatus(voucher)} className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-300 ${voucher.is_active ? 'bg-primary' : 'bg-gray-300'}`}></label>
-                                </div>
+                                {canManageVouchers ? (
+                                  <div className="relative inline-block w-8 align-middle select-none">
+                                    <input type="checkbox" checked={voucher.is_active} onChange={() => toggleStatus(voucher)} className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary" />
+                                    <label onClick={() => toggleStatus(voucher)} className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-300 ${voucher.is_active ? 'bg-primary' : 'bg-gray-300'}`}></label>
+                                  </div>
+                                ) : (
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold border ${voucher.is_active ? 'text-green-600 bg-green-50 border-green-100' : 'text-gray-500 bg-gray-100 border-gray-200'}`}>
+                                    {voucher.is_active ? 'Aktif' : 'Nonaktif'}
+                                  </span>
+                                )}
                                 {voucher.is_active ? <span className="text-green-600 font-bold text-[10px] bg-green-50 px-2 py-1 rounded-md border border-green-100">Aktif</span> : <span className="text-gray-500 font-bold text-[10px] bg-gray-100 px-2 py-1 rounded-md border border-gray-200">Nonaktif</span>}
                               </div>
                             </td>
                             <td className="px-6 py-4 align-middle text-right">
-                              <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => editVoucher(voucher)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm">
-                                  <i className="fa-solid fa-pen text-xs"></i>
-                                </button>
-                                <button onClick={() => deleteVoucher(voucher.id)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm">
-                                  <i className="fa-solid fa-trash text-xs"></i>
-                                </button>
-                              </div>
+                              {canManageVouchers ? (
+                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button onClick={() => editVoucher(voucher)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-primary hover:border-primary hover:bg-white transition-all flex items-center justify-center bg-white shadow-sm">
+                                    <i className="fa-solid fa-pen text-xs"></i>
+                                  </button>
+                                  <button onClick={() => deleteVoucher(voucher.id)} className="w-8 h-8 rounded-lg border border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all flex items-center justify-center bg-white shadow-sm">
+                                    <i className="fa-solid fa-trash text-xs"></i>
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-xs font-medium text-gray-400">Read only</span>
+                              )}
                             </td>
                           </tr>
                         )

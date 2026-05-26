@@ -11,279 +11,150 @@ import {
   Printer,
   ShoppingBasket,
   StickyNote,
-  Store
+  Store,
+  ArrowLeft,
+  LockKeyhole,
 } from 'lucide-react'
 
-import { api } from '../../services/api'
-import { getStoredAuth } from '../../services/auth'
+import { useNavigate } from 'react-router-dom'
 
-const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80'
+import { useCashierCart } from '../../hooks/useCashierCart'
+import { useCashierSession } from '../../hooks/useCashierSession'
+import { loadCashierData } from '../../services/cashier'
+import { calculateCashierAddOnsPrice, getCashierAddOnDetails } from '../../utils/cashiers'
 
 export function Cashier() {
-  const { user } = getStoredAuth() || {}
+  const navigate = useNavigate()
+  const {
+    cashierId,
+    enterPos,
+    isPosOpen,
+    isUnlockSubmitting,
+    lockCashier,
+    loginError,
+    pin,
+    requiresCashierUnlock,
+    setPin,
+  } = useCashierSession()
 
   // Backend state
   const [categories, setCategories] = useState([{ id: 'all', name: 'Semua' }])
   const [menuItems, setMenuItems] = useState([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [taxRate, setTaxRate] = useState(10)
   const [restaurantName, setRestaurantName] = useState('TapMenu Kasir')
   const [restaurantAddress, setRestaurantAddress] = useState('')
 
-  // Cashier Lock state
-  const [isPosOpen, setIsPosOpen] = useState(false)
-  const [cashierId, setCashierId] = useState(user?.employee_code || user?.full_name || 'Owner/Admin')
-  const [pin, setPin] = useState('')
-  const [loginError, setLoginError] = useState('')
+  const [pageError, setPageError] = useState('')
+  const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false)
 
-  // POS state
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [cart, setCart] = useState([])
-  const [orderType, setOrderType] = useState('dine_in')
-  const [orderNumber, setOrderNumber] = useState('')
+  const {
+    addFromModal,
+    cart,
+    cashReceived,
+    change,
+    clearCart,
+    closeAddOnModal,
+    closeNoteModal,
+    filteredItems,
+    handleItemClick,
+    handlePayment,
+    isAwaitingQrisConfirmation,
+    isPaymentSubmitting,
+    noteInput,
+    openNoteModal,
+    orderNumber,
+    orderType,
+    paymentError,
+    paymentMethod,
+    paymentStatusLabel,
+    paymentTransaction,
+    processPayment,
+    qrisQrUrl,
+    removeFromCart,
+    resetOrder,
+    saveNote,
+    searchQuery,
+    selectedAddOns,
+    selectedCategory,
+    selectedItem,
+    setCashInput,
+    setCashReceived,
+    setNoteInput,
+    setOrderType,
+    setPaymentMethod,
+    setSearchQuery,
+    setSelectedCategory,
+    showAddOnModal,
+    showNoteModal,
+    showPaymentModal,
+    showSuccessModal,
+    setShowPaymentModal,
+    setShowSuccessModal,
+    subtotal,
+    tax,
+    toggleAddOn,
+    total,
+    updateQuantity,
+  } = useCashierCart({ menuItems, taxRate })
 
-  // Modal states
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState('cash')
-  const [cashReceived, setCashReceived] = useState('')
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [showAddOnModal, setShowAddOnModal] = useState(false)
-  const [selectedItem, setSelectedItem] = useState(null)
-  const [selectedAddOns, setSelectedAddOns] = useState([])
-  const [showNoteModal, setShowNoteModal] = useState(false)
-  const [currentNoteItem, setCurrentNoteItem] = useState(null)
-  const [noteInput, setNoteInput] = useState('')
-
-  // Get current date
   const currentDate = new Date().toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
-    year: 'numeric'
+    year: 'numeric',
   })
-
-
 
   useEffect(() => {
     let active = true
+
     async function loadData() {
       try {
-        const [catsRes, itemsRes, meRes] = await Promise.all([
-          api.get('/api/v1/catalogs/categories/'),
-          api.get('/api/v1/catalogs/items/'),
-          api.get('/api/v1/restaurants/me/')
-        ])
+        const { categories: loadedCategories, menuItems: loadedMenuItems, restaurant } = await loadCashierData()
         if (!active) return
 
-        const loadedCats = Array.isArray(catsRes?.results) ? catsRes.results : (catsRes || [])
-        const loadedItems = Array.isArray(itemsRes?.results) ? itemsRes.results : (itemsRes || [])
-        
-        setCategories([{ id: 'all', name: 'Semua' }, ...loadedCats.map(c => ({ id: String(c.id), name: c.name }))])
-        setMenuItems(loadedItems)
-        if (meRes) {
-           setTaxRate(Number(meRes.tax_rate || 0))
-           setRestaurantName(meRes.name || 'TapMenu Kasir')
-           setRestaurantAddress(meRes.address || 'Bandung')
+        setCategories(loadedCategories)
+        setMenuItems(loadedMenuItems)
+        if (restaurant) {
+          setTaxRate(Number(restaurant.tax_rate || 0))
+          setRestaurantName(restaurant.name || 'TapMenu Kasir')
+          setRestaurantAddress(restaurant.address || 'Bandung')
         }
+        setPageError('')
       } catch (err) {
-        console.error(err)
+        if (active) setPageError(err.message || 'Gagal memuat data kasir.')
       }
     }
+
     loadData()
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [])
 
-  const filteredItems = menuItems.filter(item => {
-    if (selectedCategory !== 'all' && String(item.category) !== selectedCategory) return false
-    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
-    return true
-  })
-
-  // getAddOnDetails converts simple variant selection (selectedAddOns) back to option objects
-  const getAddOnDetails = (selectedOptionsArr) => {
-    // Array of { groupName, optionName, price }
-    return selectedOptionsArr || []
+  const leaveCashier = () => {
+    setIsQuickMenuOpen(false)
+    navigate('/dashboard', { replace: false })
   }
 
-  const calculateAddOnsPrice = (selectedOptionsArr) => {
-    return (selectedOptionsArr || []).reduce((sum, opt) => sum + (Number(opt.price) || 0), 0)
-  }
-
-  const toggleAddOn = (groupName, optionId, optionName, optionPrice) => {
-    setSelectedAddOns(prev => {
-      // Remove any existing option from the same group
-      const filtered = prev.filter(opt => opt.groupName !== groupName)
-      // Toggle off if they clicked the exact same option
-      const exists = prev.find(opt => opt.groupName === groupName && opt.optionName === optionName)
-      if (exists) return filtered
-      
-      // Select the new option
-      return [...filtered, { groupName, optionId, optionName, price: optionPrice }]
-    })
-  }
-
-  const handleItemClick = (item) => {
-    if (!item.in_stock) return
-
-    if (item.variants && item.variants.length > 0) {
-      setSelectedItem(item)
-      setSelectedAddOns([])
-      setShowAddOnModal(true)
-    } else {
-      addToCartDirect(item, [])
-    }
-  }
-
-  const addToCartDirect = (item, itemAddOns) => {
-    // Unique ID generation per precise variant configurations
-    const addOnHash = itemAddOns.map(o => o.optionName).sort().join('-')
-    const cartItemId = `${item.id}-${addOnHash}`
-    const existingItem = cart.find(cartItem => cartItem.cartItemId === cartItemId)
-    const effectivePrice = Number(item.effective_price ?? item.price ?? 0)
-
-    if (existingItem) {
-      setCart(cart.map(cartItem =>
-        cartItem.cartItemId === cartItemId
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ))
-    } else {
-      setCart([...cart, {
-        ...item,
-        price: effectivePrice,
-        cartItemId,
-        selectedAddOns: itemAddOns,
-        quantity: 1,
-        note: ''
-      }])
-    }
-  }
-
-  const addFromModal = () => {
-    if (selectedItem) {
-      addToCartDirect(selectedItem, selectedAddOns)
-      setShowAddOnModal(false)
-      setSelectedItem(null)
-      setSelectedAddOns([])
-    }
-  }
-
-  const updateQuantity = (cartItemId, delta) => {
-    setCart(cart.map(item => {
-      if (item.cartItemId === cartItemId) {
-        const newQuantity = item.quantity + delta
-        return newQuantity > 0 ? { ...item, quantity: newQuantity } : item
-      }
-      return item
-    }).filter(item => item.quantity > 0))
-  }
-
-  const removeFromCart = (cartItemId) => {
-    setCart(cart.filter(item => item.cartItemId !== cartItemId))
-  }
-
-  const openNoteModal = (item) => {
-    setCurrentNoteItem(item)
-    setNoteInput(item.note || '')
-    setShowNoteModal(true)
-  }
-
-  const saveNote = () => {
-    if (currentNoteItem) {
-      setCart(cart.map(item =>
-        item.cartItemId === currentNoteItem.cartItemId
-          ? { ...item, note: noteInput }
-          : item
-      ))
-    }
-    setShowNoteModal(false)
-    setCurrentNoteItem(null)
-    setNoteInput('')
-  }
-
-  const subtotal = cart.reduce((sum, item) => {
-    const addOnsPrice = calculateAddOnsPrice(item.selectedAddOns || [])
-    return sum + ((item.price + addOnsPrice) * item.quantity)
-  }, 0)
-  const tax = Math.round(subtotal * (taxRate / 100))
-  const total = subtotal + tax
-
-  const handlePayment = () => {
-    if (cart.length === 0) return
-    setShowPaymentModal(true)
-  }
-
-  const processPayment = async () => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-    
-    try {
-       // Assemble correct variants list payload logic
-       const orderItems = cart.map(item => {
-          let assembledVariants = ''
-          if (item.selectedAddOns && item.selectedAddOns.length > 0) {
-             assembledVariants = item.selectedAddOns.map(o => `${o.groupName}: ${o.optionName}`).join(', ')
-          }
-           
-          return {
-             menu_item_id: item.id,
-             quantity: item.quantity,
-             notes: item.note ? `${item.note}${assembledVariants ? ' | ' + assembledVariants : ''}` : assembledVariants
-          }
-       })
-
-       const orderPayload = await api.post('/api/v1/orders/', {
-           order_type: orderType,
-           items: orderItems,
-       })
-
-       setOrderNumber(orderPayload.order_code)
-       setShowPaymentModal(false)
-       setShowSuccessModal(true)
-    } catch (err) {
-       console.error(err)
-       alert('Gagal memproses pesanan. Pastikan koneksi stabil.')
-    } finally {
-       setIsSubmitting(false)
-    }
-  }
-
-  const resetOrder = () => {
-    setCart([])
-    setCashReceived('')
+  const handleLockCashier = () => {
+    setIsQuickMenuOpen(false)
+    setShowPaymentModal(false)
     setShowSuccessModal(false)
-    setOrderNumber('')
-  }
-
-  const clearCart = () => {
-    setCart([])
-  }
-
-  const setCashInput = (amount) => {
-    if (amount === 'exact') {
-      setCashReceived(String(total))
-    } else {
-      setCashReceived(String(amount))
-    }
-  }
-
-  const change = cashReceived ? parseInt(cashReceived) - total : 0
-
-  const enterPos = () => {
-    // For now, simple validation or hook this to `loginCashier(cashierId, pin)` if you want an explicit backend token refresh
-    if (pin.length >= 4) {
-      setIsPosOpen(true)
-      setLoginError('')
-    } else {
-      setLoginError('PIN Anda salah atau kurang dari 4 digit.')
-    }
+    lockCashier()
   }
 
   // Login View
   if (!isPosOpen) {
     return (
       <div className="fixed inset-0 z-[100] bg-primary flex flex-col items-center justify-center p-6 text-center">
-        <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full">
+        <button
+          onClick={leaveCashier}
+          className="absolute top-6 left-6 inline-flex items-center justify-center w-10 h-10 rounded-xl border border-white/20 bg-white/10 text-white hover:bg-white/20 transition-colors"
+          aria-label="Kembali ke dashboard"
+          title="Kembali ke dashboard"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full relative">
           <div className="w-16 h-16 bg-secondary text-primary rounded-2xl flex items-center justify-center text-2xl mb-6 mx-auto">
             <Store className="w-8 h-8" />
           </div>
@@ -317,9 +188,10 @@ export function Cashier() {
             )}
             <button
               onClick={enterPos}
-              className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary/90 transition-all transform active:scale-[0.98]"
+              disabled={isUnlockSubmitting}
+              className="w-full py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary/90 transition-all transform active:scale-[0.98] disabled:opacity-70"
             >
-              Buka Kasir
+              {isUnlockSubmitting ? 'Memverifikasi...' : 'Buka Kasir'}
             </button>
           </div>
         </div>
@@ -335,50 +207,99 @@ export function Cashier() {
 
         {/* POS Header */}
         <header className="bg-white px-6 py-4 flex justify-between items-center shadow-sm z-20 shrink-0">
-          <div>
-            <h2 className="font-bold text-lg text-dark">Menu Pesanan</h2>
-            <p className="text-xs text-dark/50">{currentDate} • Shift 1 (Kasir)</p>
+          <div className="flex items-center gap-3">
+            {requiresCashierUnlock ? (
+              <button
+                onClick={leaveCashier}
+                className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-dark/10 bg-white text-dark/60 hover:border-primary hover:text-primary transition-colors"
+                aria-label="Kembali ke dashboard"
+                title="Kembali ke dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            ) : null}
+            {requiresCashierUnlock ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsQuickMenuOpen((current) => !current)}
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-dark/10 bg-white text-dark/60 hover:border-primary hover:text-primary transition-colors"
+                  aria-label="Buka menu kasir"
+                >
+                  <i className="fa-solid fa-bars text-sm"></i>
+                </button>
+                {isQuickMenuOpen ? (
+                  <div className="absolute left-0 top-full mt-2 w-52 rounded-2xl border border-gray-100 bg-white shadow-xl overflow-hidden z-30">
+                    <button
+                      onClick={leaveCashier}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-dark hover:bg-gray-50 transition-colors"
+                    >
+                      <ArrowLeft className="w-4 h-4 text-primary" />
+                      Back to Dashboard
+                    </button>
+                    <button
+                      onClick={handleLockCashier}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-gray-100"
+                    >
+                      <LockKeyhole className="w-4 h-4" />
+                      Logout Kasir
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+            <div>
+              <h2 className="font-bold text-lg text-dark">Menu Pesanan</h2>
+              <p className="text-xs text-dark/50">{currentDate} • Shift 1 (Kasir)</p>
+            </div>
           </div>
-          <div className="flex items-center gap-1 bg-bg rounded-lg p-1">
-            <button
-              onClick={() => setOrderType('dine-in')}
-              className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${
-                orderType === 'dine-in'
-                  ? 'bg-white text-primary shadow-sm'
-                  : 'text-dark/50 hover:bg-white/50'
-              }`}
-            >
-              Dine In
-            </button>
-            <button
-              onClick={() => setOrderType('take-away')}
-              className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${
-                orderType === 'take-away'
-                  ? 'bg-white text-primary shadow-sm'
-                  : 'text-dark/50 hover:bg-white/50'
-              }`}
-            >
-              Take Away
-            </button>
-            <button
-              onClick={() => setOrderType('online')}
-              className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${
-                orderType === 'online'
-                  ? 'bg-white text-primary shadow-sm'
-                  : 'text-dark/50 hover:bg-white/50'
-              }`}
-            >
-              Online
-            </button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 bg-bg rounded-lg p-1">
+              <button
+                onClick={() => setOrderType('dine_in')}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                  orderType === 'dine_in'
+                    ? 'bg-white text-primary shadow-sm'
+                    : 'text-dark/50 hover:bg-white/50'
+                }`}
+              >
+                Dine In
+              </button>
+              <button
+                onClick={() => setOrderType('take_away')}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                  orderType === 'take_away'
+                    ? 'bg-white text-primary shadow-sm'
+                    : 'text-dark/50 hover:bg-white/50'
+                }`}
+              >
+                Take Away
+              </button>
+              <button
+                onClick={() => setOrderType('online')}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition-colors ${
+                  orderType === 'online'
+                    ? 'bg-white text-primary shadow-sm'
+                    : 'text-dark/50 hover:bg-white/50'
+                }`}
+              >
+                Online
+              </button>
+            </div>
           </div>
         </header>
+
+        {pageError ? (
+          <div className="mx-6 mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {pageError}
+          </div>
+        ) : null}
 
         {/* Filter Bar */}
         <div className="px-6 pt-4 pb-2 flex gap-3 overflow-x-auto shrink-0">
           {categories.map((category) => (
             <button
               key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
+                onClick={() => setSelectedCategory(category.id)}
               className={`px-5 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
                 selectedCategory === category.id
                   ? 'bg-primary text-white shadow-sm'
@@ -398,7 +319,7 @@ export function Cashier() {
               type="text"
               placeholder="Cari menu (Ketik 'Nasi' atau kode)..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-white border border-dark/10 pl-10 pr-4 py-2.5 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-secondary text-sm"
             />
           </div>
@@ -411,23 +332,23 @@ export function Cashier() {
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                disabled={!item.stock}
+                disabled={!item.in_stock}
                 className={`bg-white p-3 rounded-xl border border-dark/5 shadow-sm text-left transition-all group h-full flex flex-col ${
-                  item.stock
+                  item.in_stock
                     ? 'cursor-pointer hover:border-primary hover:shadow-md'
                     : 'opacity-50 cursor-not-allowed'
                 }`}
               >
                 <div className="h-32 bg-bg rounded-lg overflow-hidden mb-3 relative">
                   <img
-                    src={item.image}
+                    src={item.image_url || 'https://placehold.co/320x240/F7F5F2/173D30?text=TapMenu'}
                     alt={item.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur px-2 py-1 rounded text-xs font-bold text-primary shadow-sm">
-                    Rp {item.price.toLocaleString('id-ID')}
+                    Rp {Number(item.effective_price ?? item.price ?? 0).toLocaleString('id-ID')}
                   </div>
-                  {!item.stock && (
+                  {!item.in_stock && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                       <span className="text-white text-xs font-bold bg-accent px-2 py-1 rounded">Habis</span>
                     </div>
@@ -437,7 +358,7 @@ export function Cashier() {
                   {item.name}
                 </h3>
                 <p className="text-xs text-dark/40 truncate mb-0">
-                  {item.categoryName}
+                  {item.category_name}
                 </p>
               </button>
             ))}
@@ -472,7 +393,7 @@ export function Cashier() {
             </div>
           ) : (
             cart.map((item) => {
-              const addOnsPrice = calculateAddOnsPrice(item.selectedAddOns || [])
+              const addOnsPrice = calculateCashierAddOnsPrice(item.selectedAddOns || [])
               const itemTotal = (item.price + addOnsPrice) * item.quantity
               return (
                 <div key={item.cartItemId} className="p-4 bg-bg rounded-xl">
@@ -483,7 +404,7 @@ export function Cashier() {
                       </h4>
                       {item.selectedAddOns && item.selectedAddOns.length > 0 && (
                         <p className="text-xs text-dark/50 mt-0.5">
-                          + {getAddOnDetails(item.selectedAddOns).map(a => a.name).join(', ')}
+                          + {getCashierAddOnDetails(item.selectedAddOns).map((option) => option.optionName).join(', ')}
                         </p>
                       )}
                       {item.note && (
@@ -575,7 +496,7 @@ export function Cashier() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-lg text-dark">Catatan Pesanan</h3>
               <button
-                onClick={() => setShowNoteModal(false)}
+                onClick={closeNoteModal}
                 className="text-dark/40 hover:text-dark"
               >
                 <X className="w-5 h-5" />
@@ -591,7 +512,7 @@ export function Cashier() {
             />
             <div className="flex gap-2 mt-4">
               <button
-                onClick={() => setShowNoteModal(false)}
+                onClick={closeNoteModal}
                 className="flex-1 py-2.5 bg-bg text-dark/50 font-bold rounded-xl hover:bg-dark/10 transition-colors"
               >
                 Batal
@@ -627,7 +548,7 @@ export function Cashier() {
               {/* Payment Method */}
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <button
-                  onClick={() => setPaymentMethod('cash')}
+                onClick={() => setPaymentMethod('cash')}
                   className={`py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-colors ${
                     paymentMethod === 'cash'
                       ? 'border-primary bg-secondary text-primary'
@@ -638,7 +559,7 @@ export function Cashier() {
                   Tunai
                 </button>
                 <button
-                  onClick={() => setPaymentMethod('qris')}
+                onClick={() => setPaymentMethod('qris')}
                   className={`py-3 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-colors ${
                     paymentMethod === 'qris'
                       ? 'border-primary bg-secondary text-primary'
@@ -710,19 +631,50 @@ export function Cashier() {
               {/* QRIS Area */}
               {paymentMethod === 'qris' && (
                 <div className="text-center py-4">
-                  <div className="w-48 h-48 bg-bg mx-auto rounded-xl flex items-center justify-center mb-4">
-                    <QrCode className="w-16 h-16 text-dark/30" />
+                  <div className="w-48 h-48 bg-bg mx-auto rounded-xl flex items-center justify-center mb-4 overflow-hidden border border-dark/10">
+                    {qrisQrUrl ? (
+                      <img src={qrisQrUrl} alt="QRIS" className="w-full h-full object-contain" />
+                    ) : (
+                      <QrCode className="w-16 h-16 text-dark/30" />
+                    )}
                   </div>
-                  <p className="text-sm text-dark/50 animate-pulse">Menunggu pembayaran...</p>
+                  <p className="text-sm text-dark/50">
+                    {isAwaitingQrisConfirmation ? 'Tampilkan QR ini ke pelanggan, lalu konfirmasi setelah pembayaran berhasil.' : 'Buat transaksi QRIS untuk menampilkan QR pembayaran.'}
+                  </p>
+                  {paymentTransaction?.reference_id ? (
+                    <p className="mt-2 text-xs font-mono text-dark/40">{paymentTransaction.reference_id}</p>
+                  ) : null}
+                  {paymentTransaction?.payment_url ? (
+                    <a
+                      href={paymentTransaction.payment_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-3 inline-flex text-xs font-bold text-primary hover:underline"
+                    >
+                      Buka halaman pembayaran
+                    </a>
+                  ) : null}
                 </div>
               )}
 
+              {paymentError ? (
+                <div className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  {paymentError}
+                </div>
+              ) : null}
+
               <button
                 onClick={processPayment}
-                disabled={paymentMethod === 'cash' && change < 0}
+                disabled={isPaymentSubmitting || (paymentMethod === 'cash' && change < 0)}
                 className="w-full mt-6 py-4 bg-primary text-white font-bold rounded-xl shadow-lg hover:bg-primary/90 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Selesaikan Transaksi
+                {isPaymentSubmitting
+                  ? 'Memproses...'
+                  : isAwaitingQrisConfirmation
+                    ? 'Konfirmasi Pembayaran'
+                    : paymentMethod === 'qris'
+                      ? 'Buat QRIS'
+                      : 'Selesaikan Transaksi'}
               </button>
             </div>
           </div>
@@ -749,13 +701,13 @@ export function Cashier() {
               </div>
               <div className="flex justify-between text-xs text-dark/50">
                 <span>Kasir</span>
-                <span>{paymentMethod === 'cash' ? 'Tunai' : 'QRIS'}</span>
+                <span>{paymentStatusLabel}</span>
               </div>
             </div>
 
             <div className="space-y-1 mb-4">
               {cart.map((item) => {
-                const addOnsPrice = calculateAddOnsPrice(item.selectedAddOns || [])
+                const addOnsPrice = calculateCashierAddOnsPrice(item.selectedAddOns || [])
                 const itemTotal = (item.price + addOnsPrice) * item.quantity
                 return (
                   <div key={item.cartItemId} className="flex justify-between text-xs">
@@ -779,7 +731,7 @@ export function Cashier() {
                 <>
                   <div className="flex justify-between text-dark/50">
                     <span>Tunai</span>
-                    <span>Rp {parseInt(cashReceived).toLocaleString('id-ID')}</span>
+                    <span>Rp {Number(cashReceived || 0).toLocaleString('id-ID')}</span>
                   </div>
                   <div className="flex justify-between text-dark/50">
                     <span>Kembali</span>
@@ -826,9 +778,7 @@ export function Cashier() {
               </div>
               <button
                 onClick={() => {
-                  setShowAddOnModal(false)
-                  setSelectedItem(null)
-                  setSelectedAddOns([])
+                  closeAddOnModal()
                 }}
                 className="p-1 rounded-lg text-dark/50 hover:text-dark hover:bg-bg"
               >
@@ -838,34 +788,51 @@ export function Cashier() {
 
             <div className="p-4">
               <h4 className="text-sm font-medium text-dark/70 mb-3">
-                Pilih Add-ons
+                Pilih Varian
               </h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {selectedItem.addOns.map((addOnId) => {
-                  const addOn = addOns.find(a => a.id === addOnId)
-                  if (!addOn) return null
-                  return (
-                    <label
-                      key={addOnId}
-                      className="flex items-center justify-between p-3 bg-bg rounded-lg cursor-pointer hover:bg-secondary/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedAddOns.includes(addOnId)}
-                          onChange={() => toggleAddOn(addOnId)}
-                          className="w-4 h-4 text-primary bg-white border-dark/20 rounded focus:ring-primary"
-                        />
-                        <span className="text-sm text-dark">
-                          {addOn.name}
-                        </span>
-                      </div>
-                      <span className="text-sm font-medium text-primary">
-                        +Rp {addOn.price.toLocaleString('id-ID')}
-                      </span>
-                    </label>
-                  )
-                })}
+              <div className="space-y-4 max-h-60 overflow-y-auto">
+                {selectedItem.variants.map((group) => (
+                  <div key={group.id || group.name} className="space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-wide text-dark/50">{group.name}</p>
+                    {group.options?.map((option) => {
+                      const optionName = option.name || 'Opsi'
+                      const isChecked = selectedAddOns.some(
+                        (entry) => entry.groupName === group.name && entry.optionName === optionName,
+                      )
+
+                      return (
+                        <label
+                          key={option.id || optionName}
+                          className="flex items-center justify-between p-3 bg-bg rounded-lg cursor-pointer hover:bg-secondary/50"
+                        >
+                          <div className="flex items-center gap-3">
+                            <input
+                              type={group.type === 'checkbox' ? 'checkbox' : 'radio'}
+                              name={group.name}
+                              checked={isChecked}
+                              onChange={() =>
+                                toggleAddOn(
+                                  group.name,
+                                  option.id || optionName,
+                                  optionName,
+                                  Number(option.price) || 0,
+                                  group.type,
+                                )
+                              }
+                              className="w-4 h-4 text-primary bg-white border-dark/20 rounded focus:ring-primary"
+                            />
+                            <span className="text-sm text-dark">
+                              {optionName}
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-primary">
+                            +Rp {(Number(option.price) || 0).toLocaleString('id-ID')}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                ))}
               </div>
 
               {selectedAddOns.length > 0 && (
@@ -873,7 +840,7 @@ export function Cashier() {
                   <div className="flex justify-between text-sm">
                     <span className="text-primary">Total Add-ons</span>
                     <span className="font-medium text-primary">
-                      +Rp {calculateAddOnsPrice(selectedAddOns).toLocaleString('id-ID')}
+                      +Rp {calculateCashierAddOnsPrice(selectedAddOns).toLocaleString('id-ID')}
                     </span>
                   </div>
                 </div>
@@ -885,7 +852,7 @@ export function Cashier() {
                 onClick={addFromModal}
                 className="w-full px-4 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors"
               >
-                Tambah ke Keranjang - Rp {(selectedItem.price + calculateAddOnsPrice(selectedAddOns)).toLocaleString('id-ID')}
+                Tambah ke Keranjang - Rp {(selectedItem.price + calculateCashierAddOnsPrice(selectedAddOns)).toLocaleString('id-ID')}
               </button>
             </div>
           </div>

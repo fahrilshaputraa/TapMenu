@@ -7,6 +7,12 @@ from catalogs.models import MenuItem
 from restaurants.utils import require_user_restaurant
 from settings.models import Table, Voucher
 
+
+def build_order_code(restaurant_id, order_count):
+    restaurant_key = str(restaurant_id).replace('-', '').upper()[:6]
+    return f'ORD-{restaurant_key}-{order_count:05d}'
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     menu_item_name = serializers.ReadOnlyField(source='menu_item.name')
 
@@ -144,7 +150,7 @@ class CreateOrderSerializer(serializers.Serializer):
             cashier=user if user and user.role == 3 else None,
             table=table,
             voucher=voucher,
-            order_code=f'ORD-{restaurant.id:02d}-{order_count:05d}',
+            order_code=build_order_code(restaurant.id, order_count),
             customer_name=validated_data.get('customer_name', ''),
             customer_phone=validated_data.get('customer_phone', ''),
             table_number=validated_data.get('table_number', ''),

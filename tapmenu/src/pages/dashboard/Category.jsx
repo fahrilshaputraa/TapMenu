@@ -3,25 +3,19 @@ import { useEffect, useMemo, useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Modal } from '../../components/Modal'
 import { Table } from '../../components/Table'
-import { api } from '../../services/api'
-
-const CATEGORY_ICONS = [
-  'fa-bowl-rice',
-  'fa-burger',
-  'fa-pizza-slice',
-  'fa-hotdog',
-  'fa-ice-cream',
-  'fa-mug-hot',
-  'fa-wine-glass',
-  'fa-martini-glass',
-  'fa-bottle-water',
-  'fa-utensils',
-  'fa-percent',
-  'fa-star',
-  'fa-fire',
-  'fa-leaf',
-  'fa-fish',
-]
+import {
+  createCategory as createCategoryRequest,
+  deleteCategory as deleteCategoryRequest,
+  loadCategories,
+  toggleCategoryStatus,
+  updateCategory as updateCategoryRequest,
+} from '../../services/categories'
+import {
+  buildCategoryPayload,
+  CATEGORY_ICONS,
+  createCategoryFormData,
+  createDefaultCategoryFormData,
+} from '../../utils/categories'
 
 export function Category() {
   const [categories, setCategories] = useState([])
@@ -30,24 +24,15 @@ export function Category() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    sort_order: 0,
-    is_active: true,
-    icon: CATEGORY_ICONS[0],
-  })
+  const [formData, setFormData] = useState(createDefaultCategoryFormData())
 
   useEffect(() => {
     let active = true
 
-    async function loadCategories() {
+    async function fetchCategories() {
       try {
-        const payload = await api.get('/api/v1/catalogs/categories/')
-        const results = Array.isArray(payload?.results) ? payload.results : payload
-        if (active) {
-          setCategories((results || []).map((category, index) => ({ ...category, icon: CATEGORY_ICONS[index % CATEGORY_ICONS.length] })))
-        }
+        const results = await loadCategories()
+        if (active) setCategories(results)
       } catch (requestError) {
         if (active) setError(requestError.message)
       } finally {
@@ -55,7 +40,7 @@ export function Category() {
       }
     }
 
-    loadCategories()
+    fetchCategories()
     return () => {
       active = false
     }
@@ -63,10 +48,10 @@ export function Category() {
 
   const filteredCategories = useMemo(() => categories, [categories])
 
-  const toggleStatus = async (category) => {
+  const handleToggleStatus = async (category) => {
     try {
-      const updated = await api.patch(`/api/v1/catalogs/categories/${category.id}/`, { is_active: !category.is_active })
-      setCategories((current) => current.map((item) => (item.id === category.id ? { ...updated, icon: category.icon } : item)))
+      const updated = await toggleCategoryStatus(category)
+      setCategories((current) => current.map((item) => (item.id === category.id ? updated : item)))
     } catch (requestError) {
       setError(requestError.message)
     }
@@ -74,25 +59,13 @@ export function Category() {
 
   const openAddModal = () => {
     setEditingCategory(null)
-    setFormData({
-      name: '',
-      description: '',
-      sort_order: categories.length,
-      is_active: true,
-      icon: CATEGORY_ICONS[0],
-    })
+    setFormData(createDefaultCategoryFormData(categories.length))
     setIsModalOpen(true)
   }
 
   const editCategory = (category) => {
     setEditingCategory(category)
-    setFormData({
-      name: category.name || '',
-      description: category.description || '',
-      sort_order: category.sort_order || 0,
-      is_active: category.is_active,
-      icon: category.icon || CATEGORY_ICONS[0],
-    })
+    setFormData(createCategoryFormData(category))
     setIsModalOpen(true)
   }
 
@@ -104,20 +77,15 @@ export function Category() {
 
     setSaving(true)
     setError('')
-    const payload = {
-      name: formData.name,
-      description: formData.description,
-      sort_order: Number(formData.sort_order || 0),
-      is_active: formData.is_active,
-    }
+    const payload = buildCategoryPayload(formData)
 
     try {
       if (editingCategory) {
-        const updated = await api.put(`/api/v1/catalogs/categories/${editingCategory.id}/`, payload)
-        setCategories((current) => current.map((item) => (item.id === editingCategory.id ? { ...updated, icon: formData.icon } : item)))
+        const updated = await updateCategoryRequest(editingCategory.id, payload, formData.icon)
+        setCategories((current) => current.map((item) => (item.id === editingCategory.id ? updated : item)))
       } else {
-        const created = await api.post('/api/v1/catalogs/categories/', payload)
-        setCategories((current) => [...current, { ...created, icon: formData.icon }])
+        const created = await createCategoryRequest(payload, formData.icon)
+        setCategories((current) => [...current, created])
       }
       setIsModalOpen(false)
     } catch (requestError) {
@@ -131,7 +99,7 @@ export function Category() {
     if (!window.confirm('Hapus kategori ini?')) return
 
     try {
-      await api.delete(`/api/v1/catalogs/categories/${id}/`)
+      await deleteCategoryRequest(id)
       setCategories((current) => current.filter((item) => item.id !== id))
     } catch (requestError) {
       setError(requestError.message)
@@ -189,8 +157,8 @@ export function Category() {
                   accessor: (category) => (
                     <div className="flex items-center gap-3">
                       <div className="relative inline-block w-9 align-middle select-none">
-                        <input type="checkbox" checked={category.is_active} onChange={() => toggleStatus(category)} className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary" />
-                        <label onClick={() => toggleStatus(category)} className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-300 ${category.is_active ? 'bg-primary' : 'bg-gray-300'}`}></label>
+                        <input type="checkbox" checked={category.is_active} onChange={() => handleToggleStatus(category)} className="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-gray-300 checked:right-0 checked:border-primary" />
+                        <label onClick={() => handleToggleStatus(category)} className={`toggle-label block overflow-hidden h-4 rounded-full cursor-pointer transition-colors duration-300 ${category.is_active ? 'bg-primary' : 'bg-gray-300'}`}></label>
                       </div>
                       {category.is_active ? <span className="text-green-600 font-bold text-xs">Aktif</span> : <span className="text-gray-400 font-bold text-xs">Nonaktif</span>}
                     </div>

@@ -3,50 +3,24 @@ import { Plus, Search, Edit2, Trash2, Image, Upload, Heart, Star, Info, X } from
 
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Modal } from '../../components/Modal'
-import { api } from '../../services/api'
-
-const DEFAULT_FORM = {
-  name: '',
-  category: '',
-  description: '',
-  price: '',
-  discount: '',
-  tax: '10',
-  stock: '',
-  image: '',
-  isActive: true,
-  isFavorite: false,
-  isNew: false,
-  trackStock: false,
-  variants: [],
-}
-
-function formatCurrency(value) {
-  return `Rp ${Number(value || 0).toLocaleString('id-ID')}`
-}
-
-function mapMenuItem(item) {
-  return {
-    id: item.id,
-    name: item.name,
-    category: String(item.category),
-    categoryName: item.category_name,
-    price: Number(item.price || 0),
-    effectivePrice: Number(item.effective_price || item.price || 0),
-    stock: item.in_stock,
-    stockAmount: item.stock_quantity || 0,
-    image: item.image_url || '',
-    description: item.description || '',
-    discount: item.discount_percentage || 0,
-    tax: item.tax_percentage || 10,
-    isActive: item.is_available,
-    isFavorite: item.is_featured,
-    isNew: item.is_new || false,
-    variants: item.variants || [],
-    trackStock: item.track_stock || false,
-    preparationTime: item.preparation_time_minutes || 10,
-  }
-}
+import {
+  createMenuItem,
+  deleteMenuItem,
+  loadMenuManagementData,
+  toggleMenuItemStatus,
+  updateMenuItem,
+} from '../../services/menu'
+import {
+  buildMenuCategoryTabs,
+  buildMenuPayload,
+  calculateMenuFinalPrice,
+  createDefaultMenuForm,
+  createMenuFormData,
+  createMenuVariantGroup,
+  filterMenuItems,
+  formatMenuCurrency,
+  validateMenuForm,
+} from '../../utils/menu'
 
 export function MenuManagement() {
   const [categories, setCategories] = useState([])
@@ -59,25 +33,17 @@ export function MenuManagement() {
   const [showModal, setShowModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [activeTab, setActiveTab] = useState('basic')
-  const [formData, setFormData] = useState(DEFAULT_FORM)
+  const [formData, setFormData] = useState(createDefaultMenuForm())
 
   useEffect(() => {
     let active = true
 
     async function loadData() {
       try {
-        const [categoryPayload, itemPayload] = await Promise.all([
-          api.get('/api/v1/catalogs/categories/'),
-          api.get('/api/v1/catalogs/items/'),
-        ])
-
+        const payload = await loadMenuManagementData()
         if (!active) return
-
-        const loadedCategories = Array.isArray(categoryPayload?.results) ? categoryPayload.results : categoryPayload || []
-        const loadedItems = Array.isArray(itemPayload?.results) ? itemPayload.results : itemPayload || []
-
-        setCategories(loadedCategories)
-        setMenuItems(loadedItems.map(mapMenuItem))
+        setCategories(payload.categories)
+        setMenuItems(payload.items)
         setError('')
       } catch (requestError) {
         if (active) setError(requestError.message)
@@ -92,26 +58,12 @@ export function MenuManagement() {
     }
   }, [])
 
-  const categoryTabs = useMemo(
-    () => [{ id: 'all', name: 'Semua' }, ...categories.map((category) => ({ id: String(category.id), name: category.name }))],
-    [categories],
-  )
+  const categoryTabs = useMemo(() => buildMenuCategoryTabs(categories), [categories])
 
-  const filteredItems = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase()
-    return menuItems.filter((item) => {
-      if (selectedCategory !== 'all' && item.category !== selectedCategory) return false
-      if (normalizedQuery && !item.name.toLowerCase().includes(normalizedQuery)) return false
-      return true
-    })
-  }, [menuItems, searchQuery, selectedCategory])
+  const filteredItems = useMemo(() => filterMenuItems(menuItems, selectedCategory, searchQuery), [menuItems, searchQuery, selectedCategory])
 
   const resetForm = (overrides = {}) => {
-    setFormData({
-      ...DEFAULT_FORM,
-      category: categories[0] ? String(categories[0].id) : '',
-      ...overrides,
-    })
+    setFormData({ ...createDefaultMenuForm(categories), ...overrides })
   }
 
   const openAddModal = () => {
@@ -128,77 +80,29 @@ export function MenuManagement() {
 
   const openEditModal = (item) => {
     setEditingItem(item)
-    setFormData({
-      name: item.name,
-      category: String(item.category),
-      description: item.description || '',
-      price: String(item.price || ''),
-      discount: String(item.discount || ''),
-      tax: String(item.tax || '10'),
-      stock: item.stockAmount ? String(item.stockAmount) : '',
-      image: item.image || '',
-      isActive: item.isActive !== false,
-      isFavorite: item.isFavorite || false,
-      isNew: item.isNew || false,
-      trackStock: item.trackStock || false,
-      variants: item.variants || [],
-    })
+    setFormData(createMenuFormData(item))
     setActiveTab('basic')
     setShowModal(true)
   }
 
-  const buildMenuPayload = () => ({
-    category: Number(formData.category),
-    name: formData.name.trim(),
-    description: formData.description.trim(),
-    price: Number(formData.price || 0),
-    discount_percentage: Number(formData.discount || 0),
-    tax_percentage: Number(formData.tax || 10),
-    image_url: formData.image || '',
-    track_stock: formData.trackStock,
-    stock_quantity: formData.trackStock ? Math.max(Number(formData.stock || 0), 0) : 0,
-    preparation_time_minutes: 10,
-    is_available: formData.isActive,
-    is_featured: formData.isFavorite,
-    is_new: formData.isNew,
-    variants: formData.variants,
-  })
-
   const handleSaveMenu = async () => {
-    if (!formData.name.trim() || !formData.price || !formData.category) {
-      setError('Nama menu, kategori, dan harga wajib diisi.')
+    const validationError = validateMenuForm(formData)
+    if (validationError) {
+      setError(validationError)
       return
-    }
-
-    if (formData.trackStock && (formData.stock === '' || formData.stock === null || formData.stock === undefined)) {
-      setError('Jumlah stok wajib diisi ketika pelacakan stok aktif.')
-      return
-    }
-
-    for (const group of formData.variants) {
-      if (!group.name.trim()) {
-        setError('Nama grup varian wajib diisi.')
-        return
-      }
-      for (const option of group.options) {
-        if (!option.name.trim()) {
-          setError('Nama opsi varian wajib diisi.')
-          return
-        }
-      }
     }
 
     setSaving(true)
     setError('')
 
     try {
-      const payload = buildMenuPayload()
+      const payload = buildMenuPayload(formData)
       if (editingItem) {
-        const updated = await api.put(`/api/v1/catalogs/items/${editingItem.id}/`, payload)
-        setMenuItems((current) => current.map((item) => (item.id === editingItem.id ? mapMenuItem(updated) : item)))
+        const updated = await updateMenuItem(editingItem.id, payload)
+        setMenuItems((current) => current.map((item) => (item.id === editingItem.id ? updated : item)))
       } else {
-        const created = await api.post('/api/v1/catalogs/items/', payload)
-        setMenuItems((current) => [...current, mapMenuItem(created)])
+        const created = await createMenuItem(payload)
+        setMenuItems((current) => [...current, created])
       }
       setShowModal(false)
       setEditingItem(null)
@@ -214,7 +118,7 @@ export function MenuManagement() {
     if (!window.confirm('Apakah Anda yakin ingin menghapus menu ini?')) return
 
     try {
-      await api.delete(`/api/v1/catalogs/items/${id}/`)
+      await deleteMenuItem(id)
       setMenuItems((current) => current.filter((item) => item.id !== id))
     } catch (requestError) {
       setError(requestError.message)
@@ -223,20 +127,15 @@ export function MenuManagement() {
 
   const toggleItemStatus = async (item) => {
     try {
-      const updated = await api.patch(`/api/v1/catalogs/items/${item.id}/`, { is_available: !item.isActive })
-      setMenuItems((current) => current.map((entry) => (entry.id === item.id ? mapMenuItem(updated) : entry)))
+      const updated = await toggleMenuItemStatus(item)
+      setMenuItems((current) => current.map((entry) => (entry.id === item.id ? updated : entry)))
     } catch (requestError) {
       setError(requestError.message)
     }
   }
 
   const addVariantGroup = () => {
-    const newGroup = {
-      id: Date.now().toString(),
-      name: '',
-      type: 'radio',
-      options: [{ id: `${Date.now()}-opt`, name: '', price: 0 }],
-    }
+    const newGroup = createMenuVariantGroup()
     setFormData((current) => ({ ...current, variants: [...current.variants, newGroup] }))
   }
 
@@ -307,9 +206,7 @@ export function MenuManagement() {
   }
 
   const calculateFinalPrice = () => {
-    const price = Number(formData.price) || 0
-    const discount = Number(formData.discount) || 0
-    return price - (price * discount) / 100
+    return calculateMenuFinalPrice(formData)
   }
 
   return (
@@ -421,11 +318,11 @@ export function MenuManagement() {
                       <div className="mb-4">
                         {hasDiscount ? (
                           <>
-                            <span className="text-gray-400 text-xs line-through mr-1">{formatCurrency(item.price)}</span>
-                            <span className="text-accent font-extrabold text-lg">{formatCurrency(finalPrice)}</span>
+                            <span className="text-gray-400 text-xs line-through mr-1">{formatMenuCurrency(item.price)}</span>
+                            <span className="text-accent font-extrabold text-lg">{formatMenuCurrency(finalPrice)}</span>
                           </>
                         ) : (
-                          <span className="text-accent font-extrabold text-lg">{formatCurrency(item.price)}</span>
+                          <span className="text-accent font-extrabold text-lg">{formatMenuCurrency(item.price)}</span>
                         )}
                       </div>
 
@@ -565,13 +462,13 @@ export function MenuManagement() {
                 <div>
                   {Number(formData.discount) > 0 ? (
                     <>
-                      <p className="text-sm text-gray-500">Harga Normal: <span className="line-through">{formatCurrency(formData.price || 0)}</span></p>
+                      <p className="text-sm text-gray-500">Harga Normal: <span className="line-through">{formatMenuCurrency(formData.price || 0)}</span></p>
                       <p className="text-xs text-accent font-bold">Hemat {formData.discount}%</p>
                     </>
                   ) : null}
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-extrabold text-primary">{formatCurrency(calculateFinalPrice())}</p>
+                  <p className="text-2xl font-extrabold text-primary">{formatMenuCurrency(calculateFinalPrice())}</p>
                   <p className="text-[10px] text-gray-500">*Belum termasuk PPN</p>
                 </div>
               </div>

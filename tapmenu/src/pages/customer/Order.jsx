@@ -1,72 +1,35 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
-import { api } from '../../services/api'
-
-const LAST_ORDER_CODE_KEY = 'tapmenu.lastOrderCode'
-
-const TIMELINE_STEPS = [
-  {
-    id: 'PENDING',
-    title: 'Pesanan Diterima',
-    description: 'Pesanan masuk ke dapur',
-    icon: 'fa-solid fa-check',
-  },
-  {
-    id: 'PREPARING',
-    title: 'Sedang Dimasak',
-    description: 'Mohon tunggu, koki sedang menyiapkan.',
-    icon: 'fa-solid fa-fire-burner',
-  },
-  {
-    id: 'READY',
-    title: 'Siap Disajikan',
-    description: 'Pesanan akan diantar ke meja.',
-    icon: 'fa-solid fa-bell-concierge',
-  },
-  {
-    id: 'COMPLETED',
-    title: 'Pesanan Selesai',
-    description: 'Pesanan sudah diterima pelanggan.',
-    icon: 'fa-solid fa-circle-check',
-  },
-]
-
-const statusColors = {
-  PENDING: 'bg-yellow-100 text-yellow-700',
-  PAID: 'bg-emerald-100 text-emerald-700',
-  PREPARING: 'bg-blue-100 text-blue-700',
-  READY: 'bg-indigo-100 text-indigo-700',
-  COMPLETED: 'bg-green-100 text-green-700',
-  CANCELLED: 'bg-red-100 text-red-700',
-}
-
-const statusLabels = {
-  PENDING: 'Pesanan Diterima',
-  PAID: 'Sudah Dibayar',
-  PREPARING: 'Sedang Dimasak',
-  READY: 'Siap Disajikan',
-  COMPLETED: 'Selesai',
-  CANCELLED: 'Dibatalkan',
-}
+import { loadCustomerTrackedOrder } from '../../services/customerOrders'
+import {
+  CUSTOMER_LAST_ORDER_CODE_KEY,
+  CUSTOMER_TIMELINE_STEPS,
+  formatCustomerOrderCurrency,
+  formatCustomerOrderDateTime,
+  getCustomerOrderStatusColor,
+  getCustomerOrderStatusLabel,
+  getCustomerOrderTimelineState,
+  getInitialCustomerOrderCode,
+} from '../../utils/customerOrders'
 
 export function CustomerOrder() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [searchCode, setSearchCode] = useState(searchParams.get('code') || localStorage.getItem(LAST_ORDER_CODE_KEY) || '')
+  const [searchCode, setSearchCode] = useState(getInitialCustomerOrderCode(searchParams))
   const [order, setOrder] = useState(null)
-  const [loading, setLoading] = useState(Boolean(searchParams.get('code') || localStorage.getItem(LAST_ORDER_CODE_KEY)))
+  const [loading, setLoading] = useState(Boolean(getInitialCustomerOrderCode(searchParams)))
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const initialCode = searchParams.get('code') || localStorage.getItem(LAST_ORDER_CODE_KEY) || ''
+    const initialCode = getInitialCustomerOrderCode(searchParams)
     if (!initialCode) return
 
     let active = true
 
     async function loadOrder() {
       try {
-        const payload = await api.get(`/api/v1/orders/track/${initialCode}/`, { auth: false })
+        const payload = await loadCustomerTrackedOrder(initialCode)
         if (!active) return
         setOrder(payload)
         setError('')
@@ -91,9 +54,9 @@ export function CustomerOrder() {
 
     setLoading(true)
     try {
-      const payload = await api.get(`/api/v1/orders/track/${searchCode.trim().toUpperCase()}/`, { auth: false })
+      const payload = await loadCustomerTrackedOrder(searchCode.trim().toUpperCase())
       setOrder(payload)
-      localStorage.setItem(LAST_ORDER_CODE_KEY, payload.order_code)
+      localStorage.setItem(CUSTOMER_LAST_ORDER_CODE_KEY, payload.order_code)
       setError('')
     } catch (requestError) {
       setOrder(null)
@@ -103,20 +66,10 @@ export function CustomerOrder() {
     }
   }
 
-  const totals = useMemo(() => {
-    const subtotal = (order?.items || []).reduce((sum, item) => sum + Number(item.unit_price) * item.quantity, 0)
-    return {
-      subtotal,
-      formatted: subtotal.toLocaleString('id-ID'),
-    }
-  }, [order])
-
   const currentStatus = order?.status || 'PENDING'
-  const currentStatusLabel = statusLabels[currentStatus] || currentStatus
+  const currentStatusLabel = getCustomerOrderStatusLabel(currentStatus)
   const restaurantLogo = 'https://cdn-icons-png.flaticon.com/512/2921/2921822.png'
-  const createdAtLabel = order?.created_at
-    ? new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(order.created_at))
-    : '-'
+  const createdAtLabel = formatCustomerOrderDateTime(order?.created_at)
 
   return (
     <div id="check-order-view" className="min-h-screen bg-[#F7F5F2] pb-6 flex flex-col fade-in">
@@ -168,7 +121,7 @@ export function CustomerOrder() {
             <div className="relative z-10 space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${statusColors[currentStatus] || 'bg-gray-100 text-gray-600'}`}>{currentStatusLabel}</span>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide ${getCustomerOrderStatusColor(currentStatus)}`}>{currentStatusLabel}</span>
                   <h3 className="text-xl font-extrabold text-dark mt-2 leading-tight">{order.order_code}</h3>
                   <p className="text-[11px] text-gray-500">{createdAtLabel}</p>
                 </div>
@@ -179,12 +132,8 @@ export function CustomerOrder() {
 
               <div className="space-y-5 relative pl-3">
                 <div className="absolute left-[11px] top-2 bottom-4 w-0.5 bg-gray-100"></div>
-                {TIMELINE_STEPS.map((step) => {
-                  const currentStatusIndex = TIMELINE_STEPS.findIndex((timelineStep) => timelineStep.id === currentStatus)
-                  const stepIndex = TIMELINE_STEPS.findIndex((timelineStep) => timelineStep.id === step.id)
-                  const isActive = step.id === currentStatus
-                  const isDone = TIMELINE_STEPS.findIndex((s) => s.id === step.id) <
-                    currentStatusIndex
+                {CUSTOMER_TIMELINE_STEPS.map((step) => {
+                  const { isActive, isDone } = getCustomerOrderTimelineState(step.id, currentStatus)
 
                   const bubbleClass = isDone
                     ? 'bg-green-500 text-white'
@@ -214,13 +163,13 @@ export function CustomerOrder() {
                       <span>
                         <b className="text-dark">{item.quantity}x</b> {item.item_name}
                       </span>
-                      <span className="font-bold text-dark">Rp {(Number(item.unit_price) * item.quantity).toLocaleString('id-ID')}</span>
+                      <span className="font-bold text-dark">{formatCustomerOrderCurrency(Number(item.unit_price) * item.quantity)}</span>
                     </div>
                   ))}
                 </div>
                 <div className="flex justify-between items-center text-lg font-extrabold text-primary">
                   <span>Total</span>
-                  <span>Rp {Number(order.total_amount).toLocaleString('id-ID')}</span>
+                  <span>{formatCustomerOrderCurrency(order.total_amount)}</span>
                 </div>
               </div>
             </div>

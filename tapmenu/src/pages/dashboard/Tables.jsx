@@ -3,7 +3,19 @@ import { Download, Fan, Plus, Printer, QrCode, Trash2, X, CloudSun, Armchair } f
 import { Link } from 'react-router-dom'
 
 import { DashboardLayout } from '../../components/DashboardLayout'
-import { api, API_BASE_URL } from '../../services/api'
+import {
+  createTable as createTableRequest,
+  deleteTable as deleteTableRequest,
+  loadTables,
+} from '../../services/tables'
+import {
+  buildTableOrderUrl,
+  buildTablePayload,
+  buildTableQrUrl,
+  createDefaultTableFormData,
+  filterTablesByArea,
+  getTableAreaStats,
+} from '../../utils/tables'
 
 export function Tables() {
   const [tables, setTables] = useState([])
@@ -14,15 +26,14 @@ export function Tables() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState({ name: '', code: '', area: 'Indoor', seats: 4, is_active: true })
+  const [formData, setFormData] = useState(createDefaultTableFormData())
 
   useEffect(() => {
     let active = true
 
-    async function loadTables() {
+    async function fetchTables() {
       try {
-        const payload = await api.get('/api/v1/settings/tables/')
-        const results = Array.isArray(payload?.results) ? payload.results : payload
+        const results = await loadTables()
         if (active) setTables(results || [])
       } catch (requestError) {
         if (active) setError(requestError.message)
@@ -31,25 +42,15 @@ export function Tables() {
       }
     }
 
-    loadTables()
+    fetchTables()
     return () => {
       active = false
     }
   }, [])
 
-  const filteredTables = useMemo(() => {
-    if (filter === 'all') return tables
-    return tables.filter((table) => table.area === filter)
-  }, [filter, tables])
+  const filteredTables = useMemo(() => filterTablesByArea(tables, filter), [filter, tables])
 
-  const indoorCount = tables.filter((table) => table.area === 'Indoor').length
-  const outdoorCount = tables.filter((table) => table.area === 'Outdoor').length
-
-  const getQrUrl = (table) => {
-    const menuUrl = `${window.location.origin}/order?table=${table.public_token}`
-    const qrData = encodeURIComponent(menuUrl)
-    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${qrData}&color=1B4332&bgcolor=ffffff&margin=10`
-  }
+  const { indoorCount, outdoorCount } = useMemo(() => getTableAreaStats(tables), [tables])
 
   const handleSaveTable = async () => {
     if (!formData.name || !formData.code) {
@@ -60,15 +61,9 @@ export function Tables() {
     setSaving(true)
     setError('')
     try {
-      const created = await api.post('/api/v1/settings/tables/', {
-        name: formData.name,
-        code: formData.code,
-        area: formData.area,
-        seats: Number(formData.seats) || 4,
-        is_active: formData.is_active,
-      })
+      const created = await createTableRequest(buildTablePayload(formData))
       setTables((current) => [...current, created])
-      setFormData({ name: '', code: '', area: 'Indoor', seats: 4, is_active: true })
+      setFormData(createDefaultTableFormData())
       setShowAddModal(false)
     } catch (requestError) {
       setError(requestError.message)
@@ -81,7 +76,7 @@ export function Tables() {
     if (!window.confirm('Hapus meja ini?')) return
 
     try {
-      await api.delete(`/api/v1/settings/tables/${id}/`)
+      await deleteTableRequest(id)
       setTables((current) => current.filter((table) => table.id !== id))
     } catch (requestError) {
       setError(requestError.message)
@@ -99,8 +94,8 @@ export function Tables() {
         {tables.map(table => (
           <div key={table.id} className="text-center p-6 border-2 border-dashed border-gray-300 rounded-xl break-inside-avoid print:w-[45%] flex flex-col items-center">
             <h2 className="text-2xl font-extrabold text-dark mb-4">{table.name}</h2>
-            <img src={getQrUrl(table)} className="w-48 h-48 mx-auto" alt={`QR ${table.name}`} />
-            <p className="mt-4 text-[10px] font-mono text-gray-500">{window.location.origin}/order?table={table.public_token}</p>
+            <img src={buildTableQrUrl(window.location.origin, table.public_token)} className="w-48 h-48 mx-auto" alt={`QR ${table.name}`} />
+            <p className="mt-4 text-[10px] font-mono text-gray-500">{buildTableOrderUrl(window.location.origin, table.public_token)}</p>
           </div>
         ))}
       </div>
@@ -275,14 +270,14 @@ export function Tables() {
               </div>
 
               <div className="bg-white p-2 rounded-xl border-2 border-dashed border-gray-300 mb-4">
-                <img src={getQrUrl(selectedTable)} alt="QR Code" className="w-48 h-48 object-contain" />
+                <img src={buildTableQrUrl(window.location.origin, selectedTable.public_token)} alt="QR Code" className="w-48 h-48 object-contain" />
               </div>
 
               <h2 className="text-2xl font-extrabold text-dark mb-1">{selectedTable.name}</h2>
               <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide ${selectedTable.area === 'Indoor' ? 'bg-gray-100 text-gray-500' : 'bg-[#FFF0EB] text-accent'}`}>{selectedTable.area}</span>
 
               <p className="text-sm text-gray-400 mt-6 max-w-[200px]">Scan QR ini dengan kamera HP untuk melihat menu dan memesan.</p>
-              <a href={`${window.location.origin}/order?table=${selectedTable.public_token}`} className="mt-3 text-xs text-primary underline">{`${window.location.origin}/order?table=${selectedTable.public_token}`}</a>
+              <a href={buildTableOrderUrl(window.location.origin, selectedTable.public_token)} className="mt-3 text-xs text-primary underline">{buildTableOrderUrl(window.location.origin, selectedTable.public_token)}</a>
             </div>
 
             <div className="p-6 bg-gray-50 border-t border-gray-100 grid grid-cols-2 gap-3">
@@ -290,7 +285,7 @@ export function Tables() {
                 <Printer className="w-4 h-4" />
                 Cetak
               </button>
-              <a href={getQrUrl(selectedTable)} target="_blank" rel="noreferrer" className="py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 flex items-center justify-center gap-2">
+              <a href={buildTableQrUrl(window.location.origin, selectedTable.public_token)} target="_blank" rel="noreferrer" className="py-3 bg-white border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-100 flex items-center justify-center gap-2">
                 <Download className="w-4 h-4" />
                 Simpan
               </a>

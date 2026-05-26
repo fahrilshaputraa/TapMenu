@@ -3,9 +3,13 @@ export const API_BASE_URL =
   `${window.location.protocol}//${window.location.hostname}:8009`
 
 export const AUTH_STORAGE_KEY = 'tapmenu.auth'
+export const CASHIER_SESSION_STORAGE_KEY = 'tapmenu.cashier-session'
+
+let refreshAccessTokenFn = null
 
 function clearStoredAuth() {
   localStorage.removeItem(AUTH_STORAGE_KEY)
+  localStorage.removeItem(CASHIER_SESSION_STORAGE_KEY)
 }
 
 function getStoredAuth() {
@@ -14,7 +18,7 @@ function getStoredAuth() {
 
   try {
     return JSON.parse(raw)
-  } catch (_error) {
+  } catch {
     return null
   }
 }
@@ -61,7 +65,7 @@ export function parseJwtPayload(token) {
     const [, payload] = token.split('.')
     if (!payload) return null
     return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-  } catch (_error) {
+  } catch {
     return null
   }
 }
@@ -84,6 +88,10 @@ function isInvalidAuthResponse(response, data, options) {
     data?.detail === 'Given token not valid for any token type' ||
     data?.messages?.some((message) => message?.token_class === 'AccessToken')
   )
+}
+
+export function registerRefreshHandler(handler) {
+  refreshAccessTokenFn = handler
 }
 
 function handleInvalidStoredAuth() {
@@ -110,7 +118,18 @@ export async function apiRequest(path, options = {}) {
 
   const data = await parseResponse(response)
   if (isInvalidAuthResponse(response, data, options)) {
-    handleInvalidStoredAuth()
+    const canRetry = options.retryOnAuthFailure !== false && typeof refreshAccessTokenFn === 'function'
+
+    if (canRetry) {
+      try {
+        await refreshAccessTokenFn()
+        return apiRequest(path, { ...options, retryOnAuthFailure: false })
+      } catch {
+        handleInvalidStoredAuth()
+      }
+    } else {
+      handleInvalidStoredAuth()
+    }
   }
 
   if (!response.ok) {

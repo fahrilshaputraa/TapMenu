@@ -1,249 +1,228 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, QrCode, Download } from 'lucide-react'
+import { ArrowLeft, Download } from 'lucide-react'
+
 import { DashboardLayout } from '../../components/DashboardLayout'
+import { createTable, loadTable, updateTable } from '../../services/tables'
+import {
+  buildTableOrderUrl,
+  buildTablePayload,
+  createDefaultTableFormData,
+  createTableFormData,
+} from '../../utils/tables'
 
 export function TableForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
-
-  const [formData, setFormData] = useState({
-    name: '',
-    capacity: '4',
-    location: '',
-    notes: '',
-    minOrder: '',
-    reservationFee: '',
-    isActive: true,
-  })
+  const [formData, setFormData] = useState(createDefaultTableFormData())
+  const [loading, setLoading] = useState(isEdit)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [publicToken, setPublicToken] = useState('')
 
   useEffect(() => {
-    if (isEdit) {
-      // Simulate fetching table data
-      // In real app, fetch from API
-      setFormData({
-        name: 'Meja 1',
-        capacity: '4',
-        location: 'Lantai 1 - Area Indoor',
-        notes: 'Dekat jendela, pemandangan taman',
-        minOrder: '50000',
-        reservationFee: '10000',
-        isActive: true,
-      })
-    } else {
-      // Auto-generate table name for new table
-      setFormData(prev => ({
-        ...prev,
-        name: 'Meja Baru',
-      }))
+    if (!isEdit) {
+      setFormData(createDefaultTableFormData())
+      setLoading(false)
+      return
     }
-  }, [isEdit, id])
 
-  const handleSubmit = (e) => {
+    let active = true
+    async function fetchTable() {
+      try {
+        const payload = await loadTable(id)
+        if (!active) return
+        setFormData(createTableFormData(payload))
+        setPublicToken(payload.public_token || '')
+        setError('')
+      } catch (requestError) {
+        if (active) setError(requestError.message || 'Gagal memuat data meja.')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    fetchTable()
+    return () => {
+      active = false
+    }
+  }, [id, isEdit])
+
+  const qrData = isEdit
+    ? buildTableOrderUrl(window.location.origin, publicToken)
+    : ''
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle save logic here
-    console.log('Save table:', formData)
-    navigate('/dashboard/tables')
+    setSaving(true)
+    setError('')
+
+    try {
+      const payload = buildTablePayload(formData)
+
+      if (isEdit) {
+        await updateTable(id, payload)
+      } else {
+        await createTable(payload)
+      }
+      navigate('/dashboard/tables', { replace: true })
+    } catch (requestError) {
+      setError(requestError.message || 'Gagal menyimpan meja.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleChange = (field, value) => {
+    setFormData((current) => ({ ...current, [field]: value }))
   }
 
   return (
     <DashboardLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Page header */}
         <div className="flex items-center gap-4">
           <Link
             to="/dashboard/tables"
-            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-zinc-900">
               {isEdit ? 'Edit Meja' : 'Tambah Meja'}
             </h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              {isEdit ? 'Ubah informasi meja' : 'Tambah meja baru'}
+            <p className="text-sm text-zinc-600">
+              {isEdit ? 'Perbarui informasi meja yang sudah ada.' : 'Buat meja baru untuk kebutuhan QR ordering.'}
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
-          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
-              Informasi Meja
-            </h2>
-
-            <div className="space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Nama Meja <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="w-full px-3 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                  placeholder="Meja 1"
-                />
-              </div>
-
-              {/* Capacity */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Kapasitas <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
-                    required
-                    min="1"
-                    max="50"
-                    className="w-full px-3 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                    placeholder="4"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500">orang</span>
-                </div>
-              </div>
-
-              {/* Location */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Lokasi
-                </label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-3 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                  placeholder="Lantai 1 - Area Indoor"
-                />
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Catatan
-                </label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
-                  placeholder="Catatan tambahan untuk meja ini"
-                />
-              </div>
-
-              {/* Active status */}
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-4 h-4 rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500"
-                />
-                <span className="text-sm text-zinc-600 dark:text-zinc-400">Meja aktif</span>
-              </label>
-            </div>
+        {error ? (
+          <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
           </div>
+        ) : null}
 
-          {/* Pricing Rules */}
-          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-            <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
-              Aturan Pemesanan
-            </h2>
-
-            <div className="space-y-4">
-              {/* Min Order */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Minimum Order
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500">Rp</span>
-                  <input
-                    type="number"
-                    value={formData.minOrder}
-                    onChange={(e) => setFormData({ ...formData, minOrder: e.target.value })}
-                    min="0"
-                    className="w-full pl-10 pr-3 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                    placeholder="0 (tidak ada minimum)"
-                  />
-                </div>
-                <p className="text-xs text-zinc-500 mt-1">Kosongkan jika tidak ada minimum order</p>
-              </div>
-
-              {/* Reservation Fee */}
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  Biaya Reservasi
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-zinc-500">Rp</span>
-                  <input
-                    type="number"
-                    value={formData.reservationFee}
-                    onChange={(e) => setFormData({ ...formData, reservationFee: e.target.value })}
-                    min="0"
-                    className="w-full pl-10 pr-3 py-2.5 text-sm bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
-                    placeholder="0 (gratis)"
-                  />
-                </div>
-                <p className="text-xs text-zinc-500 mt-1">Biaya yang dikenakan untuk reservasi meja</p>
-              </div>
-            </div>
+        {loading ? (
+          <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500">
+            Memuat data meja...
           </div>
-
-          {/* QR Code Preview (only for edit) */}
-          {isEdit && (
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
-                QR Code
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="bg-white rounded-xl border border-zinc-200 p-6">
+              <h2 className="text-lg font-semibold text-zinc-900 mb-4">
+                Informasi Meja
               </h2>
 
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                {/* QR Preview */}
-                <div className="flex items-center justify-center w-40 h-40 bg-zinc-100 dark:bg-zinc-800 rounded-lg">
-                  <QrCode className="w-20 h-20 text-zinc-400" />
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                    Nama Meja <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 text-sm bg-zinc-50 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Meja 1"
+                  />
                 </div>
 
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3">
-                    QR Code ini dapat digunakan pelanggan untuk melihat menu dan melakukan pemesanan langsung dari meja.
-                  </p>
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                    Kode Meja <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => handleChange('code', e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 text-sm bg-zinc-50 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="T01"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                    Area
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.area}
+                    onChange={(e) => handleChange('area', e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm bg-zinc-50 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="Indoor"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-1.5">
+                    Kapasitas Kursi <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.seats}
+                    onChange={(e) => handleChange('seats', e.target.value)}
+                    required
+                    min="1"
+                    className="w-full px-3 py-2.5 text-sm bg-zinc-50 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="4"
+                  />
+                </div>
+
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_active}
+                    onChange={(e) => handleChange('is_active', e.target.checked)}
+                    className="w-4 h-4 rounded border-zinc-300 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm text-zinc-600">Meja aktif</span>
+                </label>
+              </div>
+            </div>
+
+            {isEdit ? (
+              <div className="bg-white rounded-xl border border-zinc-200 p-6">
+                <h2 className="text-lg font-semibold text-zinc-900 mb-4">
+                  QR Access
+                </h2>
+
+                <div className="space-y-3">
+                  <div className="rounded-lg bg-zinc-50 border border-zinc-200 px-4 py-3 text-xs font-mono text-zinc-600 break-all">
+                    {qrData}
+                  </div>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-400 border border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                    onClick={() => window.open(qrData, '_blank', 'noopener,noreferrer')}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-600 border border-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
                   >
                     <Download className="w-4 h-4" />
-                    Download QR Code
+                    Buka Link Meja
                   </button>
                 </div>
               </div>
-            </div>
-          )}
+            ) : null}
 
-          {/* Actions */}
-          <div className="flex items-center gap-3">
-            <Link
-              to="/dashboard/tables"
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-center text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg transition-colors"
-            >
-              Batal
-            </Link>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors"
-            >
-              {isEdit ? 'Simpan Perubahan' : 'Tambah Meja'}
-            </button>
-          </div>
-        </form>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/dashboard/tables"
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-center text-zinc-700 bg-zinc-100 hover:bg-zinc-200 rounded-lg transition-colors"
+              >
+                Batal
+              </Link>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg transition-colors disabled:opacity-70"
+              >
+                {saving ? 'Menyimpan...' : isEdit ? 'Simpan Perubahan' : 'Tambah Meja'}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </DashboardLayout>
   )

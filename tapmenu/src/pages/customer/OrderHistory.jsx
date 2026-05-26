@@ -1,41 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-const ORDER_HISTORY_KEY = 'tapmenu.orderHistory'
-
-const statusMap = {
-  PREPARING: { label: 'Diproses', className: 'bg-blue-100 text-blue-700' },
-  READY: { label: 'Siap', className: 'bg-indigo-100 text-indigo-700' },
-  PENDING: { label: 'Menunggu', className: 'bg-yellow-100 text-yellow-700' },
-  PAID: { label: 'Dibayar', className: 'bg-emerald-100 text-emerald-700' },
-  COMPLETED: { label: 'Selesai', className: 'bg-green-100 text-green-700' },
-  CANCELLED: { label: 'Dibatalkan', className: 'bg-red-100 text-red-600' },
-  completed: { label: 'Selesai', className: 'bg-green-100 text-green-700' },
-  cancelled: { label: 'Dibatalkan', className: 'bg-red-100 text-red-600' },
-  pending: { label: 'Menunggu', className: 'bg-yellow-100 text-yellow-700' },
-}
-
-const formatRupiah = (value) => `Rp ${value.toLocaleString('id-ID')}`
+import {
+  filterCustomerOrderHistory,
+  formatCustomerOrderHistoryCurrency,
+  formatCustomerOrderHistoryDateTime,
+  getCustomerOrderHistoryStatusInfo,
+  loadCustomerOrderHistory,
+} from '../../utils/customerOrderHistory'
 
 export function CustomerOrderHistory() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('all')
   const [query, setQuery] = useState('')
-  const [orders, setOrders] = useState([])
+  const [orders] = useState(loadCustomerOrderHistory)
 
-  useEffect(() => {
-    const storedOrders = JSON.parse(localStorage.getItem(ORDER_HISTORY_KEY) || '[]')
-    setOrders(storedOrders)
-  }, [])
-
-  const filteredOrders = useMemo(() => {
-    return orders.filter((order) => {
-      if (tab === 'completed' && order.status !== 'COMPLETED') return false
-      if (tab === 'cancelled' && order.status !== 'CANCELLED') return false
-      if (query && !order.order_code.toLowerCase().includes(query.toLowerCase())) return false
-      return true
-    })
-  }, [orders, tab, query])
+  const filteredOrders = useMemo(() => filterCustomerOrderHistory(orders, tab, query), [orders, tab, query])
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] pb-6 flex flex-col fade-in">
@@ -95,7 +74,7 @@ export function CustomerOrderHistory() {
             )}
 
             {filteredOrders.map((order) => {
-              const statusInfo = statusMap[order.status] || statusMap.pending
+              const statusInfo = getCustomerOrderHistoryStatusInfo(order.status)
               return (
                 <section key={order.id} className="bg-white rounded-3xl border border-gray-100 shadow-soft p-4 relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-bl-[2.5rem] -mr-6 -mt-6"></div>
@@ -106,7 +85,7 @@ export function CustomerOrderHistory() {
                           {statusInfo.label}
                         </span>
                         <h3 className="text-xl font-extrabold text-dark mt-2 leading-tight">{order.order_code}</h3>
-                        <p className="text-xs text-gray-500">{new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(order.created_at))}</p>
+                        <p className="text-xs text-gray-500">{formatCustomerOrderHistoryDateTime(order.created_at)}</p>
                       </div>
                       <div className="text-right text-xs text-gray-500">
                         <p className="font-bold text-dark">Dine-in</p>
@@ -132,7 +111,7 @@ export function CustomerOrderHistory() {
                       </div>
                       <div className="text-right">
                         <p className="text-[11px] font-bold uppercase text-gray-400">Total</p>
-                        <p className="text-lg font-extrabold text-primary">{formatRupiah(Number(order.total_amount || 0))}</p>
+                        <p className="text-lg font-extrabold text-primary">{formatCustomerOrderHistoryCurrency(Number(order.total_amount || 0))}</p>
                       </div>
                     </div>
                   </div>

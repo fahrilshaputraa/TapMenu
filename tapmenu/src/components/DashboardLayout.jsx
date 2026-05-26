@@ -10,6 +10,7 @@ export function DashboardLayout({ children }) {
   const navigate = useNavigate()
   const auth = getStoredAuth()
   const user = auth?.user
+  const userId = user?.id || null
   const displayName = user?.full_name || 'Pengguna TapMenu'
   const displayRole = getRoleLabel(user?.role)
   const userRole = Number(user?.role)
@@ -28,7 +29,7 @@ export function DashboardLayout({ children }) {
   const lastOrderCountRef = useRef(0)
 
   useEffect(() => {
-    if (!user) return
+    if (!userId) return
 
     const fetchNotifications = async () => {
       try {
@@ -59,7 +60,7 @@ export function DashboardLayout({ children }) {
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 15000)
     return () => clearInterval(interval)
-  }, [user, dismissedIds])
+  }, [userId, dismissedIds])
 
   const dismissNotification = (id) => {
     const nextDismissed = [...dismissedIds, id]
@@ -360,12 +361,14 @@ export function DashboardLayout({ children }) {
               )}
             </div>
 
-            {/* Store Status Toggle */}
-            <Link to="/order" className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-full border border-secondary cursor-pointer hover:bg-secondary/40 transition-colors">
-              <div className="w-2 h-2 bg-green-500 rounded-full live-indicator"></div>
-              <span className="text-xs font-bold text-primary">Buka menu</span>
-              <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-primary ml-1"></i>
-            </Link>
+            {isOwnerOrManager ? (
+              <Link to="/order" className="flex items-center gap-2 bg-secondary/30 px-3 py-1.5 rounded-full border border-secondary cursor-pointer hover:bg-secondary/40 transition-colors">
+                <div className="w-2 h-2 bg-green-500 rounded-full live-indicator"></div>
+                <span className="text-xs font-bold text-primary">Buka menu</span>
+                <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-primary ml-1"></i>
+              </Link>
+            ) : null}
+
           </div>
         </header>
 

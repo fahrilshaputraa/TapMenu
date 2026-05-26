@@ -6,23 +6,17 @@ Chart.register(...registerables)
 
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Table } from '../../components/Table'
-import { api } from '../../services/api'
-
-function formatCurrency(value) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(Number(value || 0))
-}
-
-function mapOrderStatus(status) {
-  if (status === 'pending') return 'Baru'
-  if (status === 'preparing' || status === 'ready') return 'Dimasak'
-  return 'Selesai'
-}
+import { getStoredAuth } from '../../services/auth'
+import { loadOverview } from '../../services/overview'
+import {
+  buildOverviewLatestOrderRows,
+  formatOverviewCurrency,
+  getOverviewChartData,
+} from '../../utils/overview'
 
 export function DashboardOverview() {
+  const role = Number(getStoredAuth()?.user?.role)
+  const isCashier = role === 3
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -30,10 +24,13 @@ export function DashboardOverview() {
   useEffect(() => {
     let active = true
 
-    async function loadOverview() {
+    async function fetchOverview() {
       try {
-        const payload = await api.get('/api/v1/restaurants/overview/')
-        if (active) setSummary(payload)
+        const payload = await loadOverview()
+        if (active) {
+          setSummary(payload)
+          setError('')
+        }
       } catch (requestError) {
         if (active) setError(requestError.message)
       } finally {
@@ -41,7 +38,7 @@ export function DashboardOverview() {
       }
     }
 
-    loadOverview()
+    fetchOverview()
     return () => {
       active = false
     }
@@ -49,6 +46,7 @@ export function DashboardOverview() {
 
   const chartRef = useRef(null)
   const chartInstance = useRef(null)
+  const chartData = useMemo(() => getOverviewChartData(summary), [summary])
 
   useEffect(() => {
     if (!chartRef.current || !summary) return
@@ -61,10 +59,10 @@ export function DashboardOverview() {
     chartInstance.current = new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ['Pesanan Selesai', 'Belum Diproses'],
+        labels: chartData.labels,
         datasets: [{
           label: 'Jumlah Pesanan',
-          data: [summary.paid_orders || 0, summary.pending_orders || 0],
+          data: chartData.values,
           backgroundColor: ['#1B4332', '#d06a50'],
           borderRadius: 6,
         }]
@@ -86,17 +84,9 @@ export function DashboardOverview() {
         chartInstance.current.destroy()
       }
     }
-  }, [summary])
+  }, [chartData, summary])
 
-  const latestOrders = useMemo(() => {
-    return (summary?.latest_orders || []).map((order) => ({
-      id: order.order_code,
-      table: order.table__name || order.customer_name || 'Order tanpa meja',
-      items: order.status,
-      total: formatCurrency(order.total_amount),
-      status: mapOrderStatus(order.status),
-    }))
-  }, [summary])
+  const latestOrders = useMemo(() => buildOverviewLatestOrderRows(summary), [summary])
 
   return (
     <DashboardLayout>
@@ -111,7 +101,7 @@ export function DashboardOverview() {
           <div className="flex justify-between items-start mb-4">
             <div>
               <p className="text-gray-500 text-sm font-medium mb-1">Total Omzet Hari Ini</p>
-              <h3 className="text-2xl font-bold text-dark">{loading ? 'Memuat...' : formatCurrency(summary?.revenue)}</h3>
+              <h3 className="text-2xl font-bold text-dark">{loading ? 'Memuat...' : formatOverviewCurrency(summary?.revenue)}</h3>
             </div>
             <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center text-primary">
               <i className="fa-solid fa-wallet"></i>
@@ -213,24 +203,39 @@ export function DashboardOverview() {
         <div className="space-y-6">
           <div className="bg-primary text-white p-6 rounded-2xl shadow-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
-            <h3 className="font-bold text-lg mb-4 relative z-10">Aksi Cepat</h3>
+            <h3 className="font-bold text-lg mb-4 relative z-10">{isCashier ? 'Navigasi Kasir' : 'Aksi Cepat'}</h3>
             <div className="grid grid-cols-2 gap-3 relative z-10">
-              <Link to="/dashboard/menu" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
-                <i className="fa-solid fa-plus-circle text-xl text-secondary"></i>
-                <span className="text-xs font-semibold">Tambah Menu</span>
-              </Link>
-              <Link to="/dashboard/tables" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
-                <i className="fa-solid fa-print text-xl text-secondary"></i>
-                <span className="text-xs font-semibold">Kelola QR</span>
-              </Link>
-              <Link to="/dashboard/orders" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
-                <i className="fa-solid fa-file-invoice text-xl text-secondary"></i>
-                <span className="text-xs font-semibold">Pesanan</span>
-              </Link>
-              <Link to="/dashboard/settings/store" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
-                <i className="fa-solid fa-store text-xl text-secondary"></i>
-                <span className="text-xs font-semibold">Profil Toko</span>
-              </Link>
+              {isCashier ? (
+                <>
+                  <Link to="/dashboard/cashier" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+                    <i className="fa-solid fa-wallet text-xl text-secondary"></i>
+                    <span className="text-xs font-semibold">Login Kasir</span>
+                  </Link>
+                  <Link to="/dashboard/orders" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+                    <i className="fa-solid fa-file-invoice text-xl text-secondary"></i>
+                    <span className="text-xs font-semibold">Pesanan</span>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/dashboard/menu" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+                    <i className="fa-solid fa-plus-circle text-xl text-secondary"></i>
+                    <span className="text-xs font-semibold">Tambah Menu</span>
+                  </Link>
+                  <Link to="/dashboard/tables" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+                    <i className="fa-solid fa-print text-xl text-secondary"></i>
+                    <span className="text-xs font-semibold">Kelola QR</span>
+                  </Link>
+                  <Link to="/dashboard/orders" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+                    <i className="fa-solid fa-file-invoice text-xl text-secondary"></i>
+                    <span className="text-xs font-semibold">Pesanan</span>
+                  </Link>
+                  <Link to="/dashboard/settings/store" className="bg-white/10 hover:bg-white/20 p-3 rounded-xl flex flex-col items-center gap-2 transition-colors backdrop-blur-sm">
+                    <i className="fa-solid fa-store text-xl text-secondary"></i>
+                    <span className="text-xs font-semibold">Profil Toko</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 

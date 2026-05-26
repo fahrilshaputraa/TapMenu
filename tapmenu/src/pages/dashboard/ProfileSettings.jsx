@@ -13,51 +13,48 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '../../components/DashboardLayout'
-import { fetchMe, getRoleLabel, logout, updateMe } from '../../services/auth'
+import { logout } from '../../services/auth'
+import { loadProfile, saveProfile } from '../../services/profile'
+import {
+  createDefaultPasswordForm,
+  createDefaultPinForm,
+  createDefaultProfileFormData,
+  validateProfileSecurity,
+} from '../../utils/profile'
 
 export function ProfileSettings() {
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isSaving, setIsSaving] = useState(false)
-  const [profileData, setProfileData] = useState({
-    name: 'Budi Santoso',
-    email: 'budi.warung@gmail.com',
-    phone: '0812-3456-7890',
-    role: 'Owner',
-    avatar: 'https://i.pravatar.cc/150?img=5',
-    joinDate: '12 Januari 2023',
-  })
+  const [roleId, setRoleId] = useState(null)
+  const [profileData, setProfileData] = useState(createDefaultProfileFormData())
 
-  const [passwords, setPasswords] = useState({
-    new: '',
-    confirm: '',
-  })
+  const [passwords, setPasswords] = useState(createDefaultPasswordForm())
+  const [pinData, setPinData] = useState(createDefaultPinForm())
 
   useEffect(() => {
     let active = true
 
-    async function loadProfile() {
+    async function fetchProfile() {
       try {
-        const user = await fetchMe()
+        const payload = await loadProfile()
         if (!active) return
-        setProfileData((current) => ({
-          ...current,
-          name: user.full_name || '',
-          email: user.email || '',
-          phone: user.phone_number || '',
-          role: getRoleLabel(user.role),
-        }))
+        setProfileData(payload.profileData)
+        setRoleId(Number(payload.user.role))
+        setError('')
       } catch (requestError) {
         if (active) setError(requestError.message)
       }
     }
 
-    loadProfile()
+    fetchProfile()
     return () => {
       active = false
     }
   }, [])
+
+  const canChangePin = roleId === 3
 
   const handleAvatarUpload = (e) => {
     const file = e.target.files[0]
@@ -68,15 +65,16 @@ export function ProfileSettings() {
       }
       const reader = new FileReader()
       reader.onloadend = () => {
-        setProfileData({ ...profileData, avatar: reader.result })
+        setProfileData((current) => ({ ...current, avatar: reader.result }))
       }
       reader.readAsDataURL(file)
     }
   }
 
   const handleSave = async () => {
-    if (passwords.new && passwords.new !== passwords.confirm) {
-      setError('Konfirmasi password belum sama.')
+    const validationError = validateProfileSecurity(passwords, pinData, canChangePin)
+    if (validationError) {
+      setError(validationError)
       return
     }
 
@@ -85,14 +83,12 @@ export function ProfileSettings() {
     setIsSaving(true)
 
     try {
-      await updateMe({
-        full_name: profileData.name,
-        email: profileData.email,
-        phone_number: profileData.phone,
-        ...(passwords.new ? { password: passwords.new } : {}),
-      })
+      const payload = await saveProfile(profileData, passwords, pinData)
+      setProfileData((current) => ({ ...current, ...payload.profileData, avatar: current.avatar }))
+      setRoleId(Number(payload.user.role))
       setSuccess('Profil berhasil disimpan.')
-      setPasswords({ new: '', confirm: '' })
+      setPasswords(createDefaultPasswordForm())
+      setPinData(createDefaultPinForm())
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -277,6 +273,40 @@ export function ProfileSettings() {
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark"
                     />
                   </div>
+
+                  {canChangePin ? (
+                    <>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                          PIN Kasir Baru
+                        </label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          maxLength="6"
+                          value={pinData.next}
+                          onChange={(e) => setPinData({ ...pinData, next: e.target.value.replace(/\D/g, '') })}
+                          placeholder="4-6 digit"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark font-mono tracking-[0.2em]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                          Konfirmasi PIN Kasir
+                        </label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          maxLength="6"
+                          value={pinData.confirm}
+                          onChange={(e) => setPinData({ ...pinData, confirm: e.target.value.replace(/\D/g, '') })}
+                          placeholder="Ulangi PIN baru"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-dark font-mono tracking-[0.2em]"
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1">PIN ini dipakai untuk login ke terminal kasir.</p>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
 

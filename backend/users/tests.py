@@ -4,7 +4,9 @@ from rest_framework.test import APITestCase
 
 from django.urls import reverse
 
+from restaurants.models import Restaurant
 from users.serializers import PasswordResetConfirmSerializer
+from users.models import UserRole
 
 User = get_user_model()
 
@@ -17,10 +19,34 @@ class AuthAPITests(APITestCase):
         self.logout_url = reverse('users:logout')
         self.forgot_url = reverse('users:forgot_password')
         self.reset_url = reverse('users:reset_password')
+        self.employee_url = reverse('users:employee-list')
+        self.me_url = reverse('users:me')
         self.user = User.objects.create_user(
             email='user@example.com',
             password='Secret123!',
             full_name='Test User',
+        )
+        self.owner = User.objects.create_user(
+            email='owner@example.com',
+            password='OwnerSecret123!',
+            full_name='Owner User',
+            role=UserRole.OWNER,
+        )
+        self.restaurant = Restaurant.objects.create(
+            owner=self.owner,
+            name='Warung Test',
+            slug='warung-test',
+        )
+        self.owner.restaurant = self.restaurant
+        self.owner.save(update_fields=['restaurant'])
+        self.cashier = User.objects.create_user(
+            email='cashier@example.com',
+            password='CashierSecret123!',
+            full_name='Cashier User',
+            role=UserRole.CASHIER,
+            restaurant=self.restaurant,
+            employee_code='KSR-TEST001',
+            pin_code='1234',
         )
 
     def test_register_creates_user_and_returns_tokens(self):
@@ -96,5 +122,41 @@ class AuthAPITests(APITestCase):
             format='json',
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_owner_can_create_employee_with_uuid_restaurant_id(self):
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.post(
+            self.employee_url,
+            {
+                'email': 'new-cashier@example.com',
+                'full_name': 'Cashier User',
+                'phone_number': '081234567890',
+                'role': UserRole.CASHIER,
+                'pin_code': '123456',
+                'is_active': True,
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data['employee_code'].startswith('KSR-'))
+        self.assertEqual(len(response.data['employee_code']), len('KSR-') + 6 + 3)
+
+    def test_cashier_can_update_own_pin_via_me_endpoint(self):
+        self.client.force_authenticate(user=self.cashier)
+        response = self.client.put(
+            self.me_url,
+            {
+                'full_name': self.cashier.full_name,
+                'email': self.cashier.email,
+                'phone_number': self.cashier.phone_number,
+                'pin_code': '567890',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.cashier.refresh_from_db()
+        self.assertEqual(self.cashier.pin_code, '567890')
 
 # Create your tests here.

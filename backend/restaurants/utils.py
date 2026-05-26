@@ -17,6 +17,13 @@ def get_user_restaurant(user):
     return None
 
 
+def get_default_appearance_payload(restaurant):
+    return {
+        'hero_title': restaurant.name,
+        'hero_subtitle': restaurant.description or 'Menu digital restoran',
+    }
+
+
 def require_user_restaurant(user):
     restaurant = get_user_restaurant(user)
     if restaurant is None:

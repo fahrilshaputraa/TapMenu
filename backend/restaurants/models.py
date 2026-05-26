@@ -1,9 +1,12 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
 
 
 class Restaurant(models.Model):
+	id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 	owner = models.OneToOneField(
 		settings.AUTH_USER_MODEL,
 		on_delete=models.CASCADE,
@@ -61,8 +64,20 @@ class RestaurantAppearance(models.Model):
 	)
 	primary_color = models.CharField(max_length=20, default='#1B4332')
 	accent_color = models.CharField(max_length=20, default='#E07A5F')
-	logo_url = models.URLField(blank=True)
-	cover_image_url = models.URLField(blank=True)
+	font_style = models.CharField(max_length=100, default='Plus Jakarta Sans')
+	bg_pattern = models.CharField(max_length=50, default='pattern-none')
+	bg_color = models.CharField(max_length=20, default='#F7F5F2')
+	layout_style = models.CharField(max_length=20, default='list')
+	header_style = models.CharField(max_length=20, default='standard')
+	show_banner = models.BooleanField(default=True)
+	show_profile = models.BooleanField(default=True)
+	show_images = models.BooleanField(default=True)
+	show_description = models.BooleanField(default=True)
+	card_radius = models.PositiveSmallIntegerField(default=12)
+	card_shadow = models.PositiveSmallIntegerField(default=1)
+	button_style = models.CharField(max_length=20, default='circle')
+	logo_url = models.TextField(blank=True)
+	cover_image_url = models.TextField(blank=True)
 
 	def __str__(self) -> str:
 		return f'Appearance for {self.restaurant.name}'

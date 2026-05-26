@@ -1,126 +1,36 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  claimCustomerVoucher,
+  customerVoucherStatusLabels,
+  defaultCustomerVouchers,
+  filterCustomerVouchers,
+  formatCustomerVoucherRupiah,
+  getCustomerVoucherBenefitLabel,
+  getCustomerVoucherEmptyStateText,
+} from '../../utils/customerVouchers'
 
-const defaultVouchers = [
-  {
-    id: 1,
-    title: 'Diskon 20% Menu Spesial',
-    code: 'BUDEWI20',
-    description: 'Berlaku untuk semua menu signature.',
-    minOrder: 50000,
-    expiresAt: '30 Okt 2023',
-    status: 'active',
-    type: 'percentage',
-    value: 20,
-  },
-  {
-    id: 2,
-    title: 'Cashback Rp 15.000',
-    code: 'CB15000',
-    description: 'Cashback berlaku untuk dine-in minimal Rp 75.000.',
-    minOrder: 75000,
-    expiresAt: '5 Nov 2023',
-    status: 'active',
-    type: 'cash',
-    value: 15000,
-  },
-  {
-    id: 3,
-    title: 'Gratis Es Teh Manis',
-    code: 'GRATISTEH',
-    description: 'Bonus 1 gelas es teh manis untuk min order Rp 25.000.',
-    minOrder: 25000,
-    expiresAt: '19 Okt 2023',
-    status: 'used',
-    type: 'bonus',
-    value: null,
-  },
-  {
-    id: 4,
-    title: 'Diskon 10% All Menu',
-    code: 'ALL10',
-    description: 'Tidak berlaku untuk paket hemat.',
-    minOrder: 40000,
-    expiresAt: '12 Okt 2023',
-    status: 'expired',
-    type: 'percentage',
-    value: 10,
-  },
-]
-
-const statusLabels = {
-  active: { label: 'Aktif', className: 'bg-green-100 text-green-700' },
-  used: { label: 'Sudah Dipakai', className: 'bg-blue-100 text-blue-700' },
-  expired: { label: 'Kedaluwarsa', className: 'bg-gray-100 text-gray-500' },
-}
-
-const redeemableVoucherByCode = {
-  FRESH10: {
-    title: 'Diskon 10% Menu Sehat',
-    code: 'FRESH10',
-    description: 'Diskon khusus menu sehat dan sayur.',
-    minOrder: 40000,
-    expiresAt: '12 Nov 2023',
-    status: 'active',
-    type: 'percentage',
-    value: 10,
-  },
-  ONGKIR0: {
-    title: 'Gratis Ongkir',
-    code: 'ONGKIR0',
-    description: 'Berlaku untuk layanan antar min Rp 60.000.',
-    minOrder: 60000,
-    expiresAt: '30 Nov 2023',
-    status: 'active',
-    type: 'cash',
-    value: 10000,
-  },
-}
-
-const formatRupiah = (value) => `Rp ${value.toLocaleString('id-ID')}`
+/** @typedef {import('../../types/customerVouchers').CustomerVoucherClaimStatus} CustomerVoucherClaimStatus */
 
 export function CustomerVoucher() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('active')
-  const [vouchers, setVouchers] = useState(defaultVouchers)
+  const [vouchers, setVouchers] = useState(defaultCustomerVouchers)
   const [voucherCode, setVoucherCode] = useState('')
+  /** @type {[CustomerVoucherClaimStatus | null, import('react').Dispatch<import('react').SetStateAction<CustomerVoucherClaimStatus | null>>]} */
   const [claimStatus, setClaimStatus] = useState(null)
 
-  const filteredVouchers = useMemo(() => {
-    if (tab === 'active') return vouchers.filter((voucher) => voucher.status === 'active')
-    return vouchers.filter((voucher) => voucher.status !== 'active')
-  }, [tab, vouchers])
+  const filteredVouchers = useMemo(() => filterCustomerVouchers(vouchers, tab), [tab, vouchers])
 
   const handleClaimVoucher = (event) => {
     event.preventDefault()
-    const code = voucherCode.trim().toUpperCase()
-    if (!code) {
-      setClaimStatus({ type: 'error', message: 'Masukkan kode voucher terlebih dahulu.' })
-      return
-    }
-
-    if (vouchers.some((voucher) => voucher.code === code)) {
-      setClaimStatus({ type: 'info', message: 'Kode sudah ada di daftar voucher kamu.' })
-      return
-    }
-
-    const voucherTemplate = redeemableVoucherByCode[code]
-    if (!voucherTemplate) {
-      setClaimStatus({ type: 'error', message: 'Kode voucher tidak ditemukan.' })
-      return
-    }
-
-    setVouchers((prev) => [
-      { ...voucherTemplate, id: Date.now() },
-      ...prev,
-    ])
-    setVoucherCode('')
-    setClaimStatus({ type: 'success', message: 'Voucher berhasil diklaim!' })
+    const result = claimCustomerVoucher(vouchers, voucherCode)
+    setVouchers(result.nextVouchers)
+    setVoucherCode(result.nextVoucherCode)
+    setClaimStatus(result.claimStatus)
   }
 
-  const emptyStateText = tab === 'active'
-    ? 'Belum ada voucher aktif saat ini.'
-    : 'Belum ada riwayat penggunaan voucher.'
+  const emptyStateText = getCustomerVoucherEmptyStateText(tab)
 
   return (
     <div id="voucher-view" className="min-h-screen bg-[#F7F5F2] pb-6 flex flex-col fade-in">
@@ -206,7 +116,7 @@ export function CustomerVoucher() {
             )}
 
             {filteredVouchers.map((voucher) => {
-              const statusInfo = statusLabels[voucher.status]
+              const statusInfo = customerVoucherStatusLabels[voucher.status]
               const isDisabled = voucher.status !== 'active'
 
               return (
@@ -230,7 +140,7 @@ export function CustomerVoucher() {
                     <div className="grid grid-cols-2 gap-3 text-[11px] text-gray-500">
                       <div className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
                         <p className="font-bold text-dark text-xs">Min. Transaksi</p>
-                        <p className="mt-1">{formatRupiah(voucher.minOrder)}</p>
+                        <p className="mt-1">{formatCustomerVoucherRupiah(voucher.minOrder)}</p>
                       </div>
                       <div className="bg-gray-50 rounded-xl px-3 py-2 border border-gray-100">
                         <p className="font-bold text-dark text-xs">Berlaku s/d</p>
@@ -240,9 +150,7 @@ export function CustomerVoucher() {
 
                     <div className="flex items-center justify-between pt-2">
                       <div className="text-sm font-bold text-primary">
-                        {voucher.type === 'percentage' && <span>Diskon {voucher.value}%</span>}
-                        {voucher.type === 'cash' && <span>Potongan {formatRupiah(voucher.value)}</span>}
-                        {voucher.type === 'bonus' && <span>Bonus Spesial</span>}
+                        <span>{getCustomerVoucherBenefitLabel(voucher)}</span>
                       </div>
                       <button
                         type="button"

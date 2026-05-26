@@ -1,16 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { Table } from '../../components/Table'
-import { api } from '../../services/api'
-
-function formatRupiah(num) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(Number(num || 0))
-}
+import { loadReportsSummary } from '../../services/reports'
+import {
+  buildReportsTransactions,
+  filterReportTransactions,
+  formatReportsRupiah,
+  getReportsChartData,
+  getReportsMetrics,
+} from '../../utils/reports'
 
 export function Reports() {
   const [filter, setFilter] = useState('today')
@@ -27,10 +26,13 @@ export function Reports() {
   useEffect(() => {
     let active = true
 
-    async function loadSummary() {
+    async function fetchSummary() {
       try {
-        const payload = await api.get('/api/v1/reports/summary/')
-        if (active) setSummary(payload)
+        const payload = await loadReportsSummary()
+        if (active) {
+          setSummary(payload)
+          setError('')
+        }
       } catch (requestError) {
         if (active) setError(requestError.message)
       } finally {
@@ -38,35 +40,23 @@ export function Reports() {
       }
     }
 
-    loadSummary()
+    fetchSummary()
     return () => {
       active = false
     }
   }, [])
 
-  const data = {
-    revenue: Number(summary?.gross_sales || 0),
-    transactions: Number(summary?.total_orders || 0),
-    average: Number(summary?.paid_orders ? Number(summary.gross_sales || 0) / Number(summary.paid_orders) : 0),
-    chartLabels: filter === 'month' ? ['Gross', 'Discount', 'Tax', 'Service'] : ['Gross', 'Pending', 'Paid'],
-    chartData: filter === 'month'
-      ? [Number(summary?.gross_sales || 0), Number(summary?.discounts || 0), Number(summary?.taxes || 0), Number(summary?.services || 0)]
-      : [Number(summary?.gross_sales || 0), Number(summary?.pending_orders || 0), Number(summary?.paid_orders || 0)],
-  }
-
-  const transactions = [
-    { id: 'TOTAL-ORDERS', time: '-', cashier: 'Semua staff', method: 'Semua', total: Number(summary?.total_orders || 0) },
-    { id: 'PAID-ORDERS', time: '-', cashier: 'Semua staff', method: 'Lunas', total: Number(summary?.paid_orders || 0) },
-    { id: 'PENDING-ORDERS', time: '-', cashier: 'Semua staff', method: 'Pending', total: Number(summary?.pending_orders || 0) },
-  ]
+  const metrics = useMemo(() => getReportsMetrics(summary), [summary])
+  const chartData = useMemo(() => getReportsChartData(summary, filter), [filter, summary])
+  const transactions = useMemo(() => buildReportsTransactions(summary), [summary])
 
   useEffect(() => {
     const duration = 500
     const steps = 30
     const interval = duration / steps
-    const revenueStep = Number(data.revenue) / steps
-    const transStep = Number(data.transactions) / steps
-    const avgStep = Number(data.average) / steps
+    const revenueStep = Number(metrics.revenue) / steps
+    const transStep = Number(metrics.transactions) / steps
+    const avgStep = Number(metrics.average) / steps
 
     let current = 0
     const timer = setInterval(() => {
@@ -76,15 +66,15 @@ export function Reports() {
       setAnimatedAverage(Math.floor(avgStep * current))
 
       if (current >= steps) {
-        setAnimatedRevenue(Number(data.revenue))
-        setAnimatedTransactions(Number(data.transactions))
-        setAnimatedAverage(Math.floor(Number(data.average)))
+        setAnimatedRevenue(Number(metrics.revenue))
+        setAnimatedTransactions(Number(metrics.transactions))
+        setAnimatedAverage(Math.floor(Number(metrics.average)))
         clearInterval(timer)
       }
     }, interval)
 
     return () => clearInterval(timer)
-  }, [data.average, data.revenue, data.transactions])
+  }, [metrics.average, metrics.revenue, metrics.transactions])
 
   useEffect(() => {
     const loadChart = async () => {
@@ -102,10 +92,10 @@ export function Reports() {
       chartInstance.current = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: data.chartLabels,
+          labels: chartData.labels,
           datasets: [{
             label: 'Laporan',
-            data: data.chartData,
+            data: chartData.values,
             borderColor: '#1B4332',
             backgroundColor: gradient,
             borderWidth: 2,
@@ -128,7 +118,7 @@ export function Reports() {
               cornerRadius: 8,
               callbacks: {
                 label(context) {
-                  return formatRupiah(context.raw)
+                  return formatReportsRupiah(context.raw)
                 },
               },
             },
@@ -159,12 +149,9 @@ export function Reports() {
     return () => {
       if (chartInstance.current) chartInstance.current.destroy()
     }
-  }, [data.chartData, data.chartLabels])
+  }, [chartData])
 
-  const filteredTransactions = transactions.filter((trx) => {
-    const keyword = searchQuery.toLowerCase()
-    return trx.id.toLowerCase().includes(keyword) || trx.cashier.toLowerCase().includes(keyword)
-  })
+  const filteredTransactions = useMemo(() => filterReportTransactions(transactions, searchQuery), [searchQuery, transactions])
 
   return (
     <DashboardLayout>
@@ -205,7 +192,7 @@ export function Reports() {
               </div>
               <p className="text-xs font-bold text-gray-500 uppercase">Total Pemasukan</p>
             </div>
-            <h3 className="text-2xl font-extrabold text-dark mb-1">{formatRupiah(animatedRevenue)}</h3>
+            <h3 className="text-2xl font-extrabold text-dark mb-1">{formatReportsRupiah(animatedRevenue)}</h3>
             <p className="text-xs text-green-600 font-medium flex items-center gap-1">
               <i className="fa-solid fa-arrow-trend-up"></i> {summary?.paid_orders || 0} pesanan lunas
             </p>
@@ -237,7 +224,7 @@ export function Reports() {
               </div>
               <p className="text-xs font-bold text-gray-500 uppercase">Rata-rata Order</p>
             </div>
-            <h3 className="text-2xl font-extrabold text-dark mb-1">{formatRupiah(animatedAverage)}</h3>
+            <h3 className="text-2xl font-extrabold text-dark mb-1">{formatReportsRupiah(animatedAverage)}</h3>
             <p className="text-xs text-gray-400 font-normal">Per pesanan yang sudah dibayar</p>
           </div>
         </div>
@@ -260,10 +247,10 @@ export function Reports() {
           <h3 className="font-bold text-dark text-lg mb-1">Komponen Pendapatan</h3>
           <p className="text-xs text-gray-400 mb-6">Ringkasan nilai yang disediakan backend.</p>
           <div className="space-y-4 text-sm">
-            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Gross Sales</span><span className="font-bold text-dark">{formatRupiah(summary?.gross_sales)}</span></div>
-            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Discount</span><span className="font-bold text-dark">{formatRupiah(summary?.discounts)}</span></div>
-            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Tax</span><span className="font-bold text-dark">{formatRupiah(summary?.taxes)}</span></div>
-            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Service</span><span className="font-bold text-dark">{formatRupiah(summary?.services)}</span></div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Gross Sales</span><span className="font-bold text-dark">{formatReportsRupiah(summary?.gross_sales)}</span></div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Discount</span><span className="font-bold text-dark">{formatReportsRupiah(summary?.discounts)}</span></div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Tax</span><span className="font-bold text-dark">{formatReportsRupiah(summary?.taxes)}</span></div>
+            <div className="flex justify-between items-center p-3 rounded-xl bg-gray-50"><span className="text-gray-500">Service</span><span className="font-bold text-dark">{formatReportsRupiah(summary?.services)}</span></div>
           </div>
           <div className="mt-6 text-xs text-gray-400">{loading ? 'Memuat data laporan...' : 'Jika butuh grafik per kasir/periode detail, endpoint backend perlu ditambah.'}</div>
         </div>
@@ -290,7 +277,7 @@ export function Reports() {
               { header: 'Waktu', accessor: (trx) => trx.time },
               { header: 'PIC', accessor: (trx) => trx.cashier },
               { header: 'Metode', accessor: (trx) => trx.method },
-              { header: 'Nilai', accessor: (trx) => <span className="font-bold text-dark">{typeof trx.total === 'number' ? formatRupiah(trx.total) : trx.total}</span> },
+              { header: 'Nilai', accessor: (trx) => <span className="font-bold text-dark">{typeof trx.total === 'number' ? formatReportsRupiah(trx.total) : trx.total}</span> },
             ]}
             data={filteredTransactions}
             isLoading={loading}

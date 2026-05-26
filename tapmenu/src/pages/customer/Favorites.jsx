@@ -1,74 +1,26 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-const favoriteItemsSeed = [
-  {
-    id: 1,
-    name: 'Nasi Goreng Spesial',
-    description: 'Porsi lengkap dengan sate ayam dan telur mata sapi.',
-    price: 25000,
-    category: 'makanan',
-    rating: 4.9,
-    tags: ['Pedas', 'Signature'],
-    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 2,
-    name: 'Ayam Bakar Madu',
-    description: 'Ayam kampung dibakar dengan saus madu istimewa.',
-    price: 28000,
-    category: 'makanan',
-    rating: 4.8,
-    tags: ['Best Seller'],
-    image: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 3,
-    name: 'Es Kopi Susu Gula Aren',
-    description: 'Kopi house blend dengan susu segar dan gula aren.',
-    price: 18000,
-    category: 'minuman',
-    rating: 4.7,
-    tags: ['Dingan'],
-    image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 4,
-    name: 'Pisang Goreng Keju',
-    description: 'Pisang kepok manis dengan topping keju melimpah.',
-    price: 15000,
-    category: 'cemilan',
-    rating: 4.6,
-    tags: ['Cemilan'],
-    image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a3a2b7b?auto=format&fit=crop&w=400&q=80',
-  },
-]
-
-const categories = [
-  { id: 'all', label: 'Semua' },
-  { id: 'makanan', label: 'Makanan' },
-  { id: 'minuman', label: 'Minuman' },
-  { id: 'cemilan', label: 'Cemilan' },
-]
-
-const formatRupiah = (value) => `Rp ${value.toLocaleString('id-ID')}`
+import {
+  customerFavoriteCategories,
+  defaultCustomerFavorites,
+  filterCustomerFavorites,
+  formatCustomerFavoriteRupiah,
+  removeCustomerFavorite,
+} from '../../utils/customerFavorites'
 
 export function CustomerFavorites() {
   const navigate = useNavigate()
-  const [favorites, setFavorites] = useState(favoriteItemsSeed)
+  const [favorites, setFavorites] = useState(defaultCustomerFavorites)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [query, setQuery] = useState('')
 
-  const filteredFavorites = useMemo(() => {
-    return favorites.filter((item) => {
-      if (selectedCategory !== 'all' && item.category !== selectedCategory) return false
-      if (query && !item.name.toLowerCase().includes(query.toLowerCase())) return false
-      return true
-    })
-  }, [favorites, selectedCategory, query])
+  const filteredFavorites = useMemo(
+    () => filterCustomerFavorites(favorites, selectedCategory, query),
+    [favorites, selectedCategory, query],
+  )
 
   const removeFavorite = (itemId) => {
-    setFavorites((prev) => prev.filter((item) => item.id !== itemId))
+    setFavorites((prev) => removeCustomerFavorite(prev, itemId))
   }
 
   return (
@@ -102,7 +54,7 @@ export function CustomerFavorites() {
             </div>
 
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {categories.map((cat) => (
+              {customerFavoriteCategories.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
@@ -164,7 +116,7 @@ export function CustomerFavorites() {
                     <div className="mt-auto flex items-center justify-between pt-3">
                       <div>
                         <p className="text-xs text-gray-500 uppercase font-bold">Harga</p>
-                        <p className="text-lg font-extrabold text-primary">{formatRupiah(item.price)}</p>
+                        <p className="text-lg font-extrabold text-primary">{formatCustomerFavoriteRupiah(item.price)}</p>
                       </div>
                       <button
                         type="button"

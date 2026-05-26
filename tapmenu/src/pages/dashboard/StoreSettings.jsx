@@ -1,80 +1,48 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DashboardLayout } from '../../components/DashboardLayout'
-import { api } from '../../services/api'
+import { loadStoreSettings, saveStoreSettings } from '../../services/storeSettings'
+import {
+  buildStoreSettingsPayload,
+  createDefaultOperationalDays,
+  createDefaultStoreData,
+  createDefaultStoreSettings,
+  DEFAULT_LOGO_IMAGE,
+  mapStoreSettingsViewData,
+} from '../../utils/storeSettings'
 
 export function StoreSettings() {
   const [hasRestaurantProfile, setHasRestaurantProfile] = useState(true)
-  const [restaurantSlug, setRestaurantSlug] = useState('')
-  const [storeData, setStoreData] = useState({
-    name: 'Warung Bu Dewi',
-    slogan: 'Rasanya seperti masakan ibu',
-    category: 'Warung Makan',
-    phone: '81234567890',
-    address: 'Jl. Merdeka No. 45, RT 02/RW 05, Kecamatan Bandung Wetan, Kota Bandung, Jawa Barat',
-    instagram: 'warungbudewi',
-    googleMaps: '',
-    openTime: '08:00',
-    closeTime: '22:00',
-  })
+  const [restaurantId, setRestaurantId] = useState('')
+  const [storeData, setStoreData] = useState(createDefaultStoreData())
 
-  const [logoImg, setLogoImg] = useState('https://cdn-icons-png.flaticon.com/512/2921/2921822.png')
+  const [logoImg, setLogoImg] = useState(DEFAULT_LOGO_IMAGE)
   const [bannerImg, setBannerImg] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [error, setError] = useState('')
 
-  const [operationalDays, setOperationalDays] = useState({
-    senin: true,
-    selasa: true,
-    rabu: true,
-    kamis: true,
-    jumat: true,
-    sabtu: true,
-    minggu: false,
-  })
+  const [operationalDays, setOperationalDays] = useState(createDefaultOperationalDays())
 
-  const [settings, setSettings] = useState({
-    acceptOnlineOrders: true,
-    showPrices: true,
-    newOrderNotification: true,
-  })
+  const [settings, setSettings] = useState(createDefaultStoreSettings())
 
   useEffect(() => {
     let active = true
 
     async function loadStore() {
       try {
-        const payload = await api.get('/api/v1/restaurants/me/')
+        const payload = await loadStoreSettings()
         if (!active) return
 
+        const viewData = mapStoreSettingsViewData(payload)
         setHasRestaurantProfile(true)
-
-        setStoreData((current) => ({
-          ...current,
-          name: payload.name || '',
-          slogan: payload.description || '',
-          phone: (payload.phone_number || '').replace(/^\+?62/, ''),
-          address: payload.address || '',
-          openTime: payload.opening_time || '08:00',
-          closeTime: payload.closing_time || '22:00',
-        }))
-        setRestaurantSlug(payload.slug || '')
-
-        if (payload.operational_days && typeof payload.operational_days === 'object') {
-          setOperationalDays({
-            ...operationalDays,
-            ...payload.operational_days
-          })
-        }
-
-        setSettings((current) => ({
-          ...current,
-          acceptOnlineOrders: payload.is_open ?? true,
-        }))
-
-        if (payload.appearance?.logo_url) setLogoImg(payload.appearance.logo_url)
-        if (payload.appearance?.cover_image_url) setBannerImg(payload.appearance.cover_image_url)
+        setRestaurantId(viewData.restaurantId)
+        setStoreData(viewData.storeData)
+        setOperationalDays(viewData.operationalDays)
+        setSettings(viewData.settings)
+        setLogoImg(viewData.logoImg)
+        setBannerImg(viewData.bannerImg)
+        setError('')
       } catch (requestError) {
         if (!active) return
 
@@ -111,26 +79,12 @@ export function StoreSettings() {
     setIsSaving(true)
     setError('')
 
-    const nextSlug = storeData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 255)
-
     try {
-      await api.put('/api/v1/restaurants/me/', {
-        name: storeData.name,
-        slug: nextSlug,
-        description: storeData.slogan,
-        phone_number: storeData.phone ? `62${storeData.phone.replace(/^0+/, '')}` : '',
-        address: storeData.address,
-        opening_time: storeData.openTime,
-        closing_time: storeData.closeTime,
-        operational_days: operationalDays,
-        is_open: settings.acceptOnlineOrders,
-        appearance: {
-          logo_url: logoImg.startsWith('data:') ? '' : logoImg,
-          cover_image_url: bannerImg.startsWith('data:') ? '' : bannerImg,
-        },
-      })
+      const response = await saveStoreSettings(
+        buildStoreSettingsPayload(storeData, operationalDays, settings, logoImg, bannerImg),
+      )
       setHasRestaurantProfile(true)
-      setRestaurantSlug(nextSlug)
+      setRestaurantId(response.id || '')
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)
     } catch (requestError) {
@@ -150,7 +104,7 @@ export function StoreSettings() {
         </div>
         <div className="flex gap-2">
           <Link
-            to={restaurantSlug ? `/order?restaurant=${restaurantSlug}` : '/order'}
+            to={restaurantId ? `/order?restaurant=${restaurantId}` : '/order'}
             className="hidden sm:flex px-4 py-2.5 bg-white border border-gray-200 text-gray-600 text-sm font-bold rounded-lg hover:bg-gray-50 transition-all items-center gap-2"
           >
             <i className="fa-regular fa-eye"></i>

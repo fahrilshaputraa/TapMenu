@@ -1,59 +1,40 @@
 import { useState, useEffect } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
+import {
+  loadDashboardSettings,
+  loadThemePreference,
+  saveDashboardSettings,
+  saveThemePreference,
+} from '../../services/settings'
+import { applyThemeToDocument } from '../../utils/settings'
 
 export function Settings() {
-  // --- STATE ---
-  const [theme, setTheme] = useState('light')
-  const [notifications, setNotifications] = useState({
-    sound: true,
-    popup: true
-  })
-  const [printer, setPrinter] = useState({
-    paperSize: '58mm',
-    autoPrint: false
-  })
-  const [payment, setPayment] = useState({
-    cash: true,
-    gateway: {
-      active: false,
-      provider: 'midtrans',
-      mode: 'sandbox',
-      clientKey: '',
-      serverKey: ''
-    },
-    manual: [
-      { id: 1, bank: 'Bank BCA', account: '123-456-7890 a.n Budi Santoso', icon: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg' }
-    ]
-  })
+  const initialSettings = loadDashboardSettings()
+  const [theme, setTheme] = useState(loadThemePreference)
+  const [notifications, setNotifications] = useState(initialSettings.notifications)
+  const [printer, setPrinter] = useState(initialSettings.printer)
+  const [payment, setPayment] = useState(initialSettings.payment)
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [pgConfigOpen, setPgConfigOpen] = useState(false)
 
-  // --- EFFECTS ---
   useEffect(() => {
-    // Load theme from localStorage or system preference
-    const savedTheme = localStorage.getItem('theme')
-    if (savedTheme) {
-      setTheme(savedTheme)
-      document.documentElement.classList.toggle('dark', savedTheme === 'dark')
-    } else {
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setTheme(systemDark ? 'dark' : 'light')
-      document.documentElement.classList.toggle('dark', systemDark)
-    }
-  }, [])
+    applyThemeToDocument(theme)
+  }, [theme])
 
-  // --- LOGIC ---
   const toggleTheme = (mode) => {
     setTheme(mode)
-    localStorage.setItem('theme', mode)
-    document.documentElement.classList.toggle('dark', mode === 'dark')
+    saveThemePreference(mode)
   }
 
   const handleSave = () => {
     setIsSaving(true)
-    // Simulate API call
     setTimeout(() => {
+      saveDashboardSettings({
+        notifications,
+        printer,
+        payment,
+      })
       setIsSaving(false)
       setSaveSuccess(true)
       setTimeout(() => setSaveSuccess(false), 2000)

@@ -5,11 +5,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from orders.models import Order, OrderStatus
-from restaurants.utils import OWNER_ACCESS_ROLES, ensure_roles, get_user_restaurant
+from restaurants.utils import OWNER_ACCESS_ROLES, ensure_roles, get_default_appearance_payload, get_user_restaurant
 
 from .models import RestaurantAppearance
 from .serializers import RestaurantAppearanceSerializer, RestaurantSerializer
-
 
 class RestaurantProfileView(APIView):
 	permission_classes = [permissions.IsAuthenticated]
@@ -46,7 +45,10 @@ class RestaurantAppearanceView(APIView):
 		restaurant = get_user_restaurant(request.user)
 		if restaurant is None:
 			return Response({'detail': 'Restaurant has not been created yet.'}, status=status.HTTP_404_NOT_FOUND)
-		appearance, _ = RestaurantAppearance.objects.get_or_create(restaurant=restaurant)
+		appearance, _ = RestaurantAppearance.objects.get_or_create(
+			restaurant=restaurant,
+			defaults=get_default_appearance_payload(restaurant),
+		)
 		return Response(RestaurantAppearanceSerializer(appearance).data)
 
 	def put(self, request):
@@ -55,7 +57,10 @@ class RestaurantAppearanceView(APIView):
 		if restaurant is None:
 			return Response({'detail': 'Restaurant has not been created yet.'}, status=status.HTTP_404_NOT_FOUND)
 
-		appearance, _ = RestaurantAppearance.objects.get_or_create(restaurant=restaurant)
+		appearance, _ = RestaurantAppearance.objects.get_or_create(
+			restaurant=restaurant,
+			defaults=get_default_appearance_payload(restaurant),
+		)
 		serializer = RestaurantAppearanceSerializer(appearance, data=request.data)
 		serializer.is_valid(raise_exception=True)
 		serializer.save()
